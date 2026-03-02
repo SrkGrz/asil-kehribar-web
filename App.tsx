@@ -14,8 +14,7 @@ import { Certificates } from './pages/Certificates';
 import { ProductDetail } from './pages/ProductDetail';
 import { CartItem, Product, Slide, SiteSettings, BlogPost } from './types';
 import { MOCK_PRODUCTS, DEFAULT_SLIDES, DEFAULT_SETTINGS, DEFAULT_BLOG_POSTS } from './constants';
-import { collection, onSnapshot, doc } from 'firebase/firestore';
-import { db } from './firebase';
+import { supabase } from './supabase';
 
 const Navbar = ({ cartCount, favCount }: { cartCount: number, favCount: number }) => {
   const [isDark, setIsDark] = useState(false);
@@ -253,58 +252,37 @@ export default function App() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
 
-  // 1. AŞAMA: Firebase Firestore ile Gerçek Zamanlı (Real-time) Senkronizasyon
+  // 1. AŞAMA: Supabase ile Gerçek Zamanlı (Real-time) Veri Çekme
   useEffect(() => {
-    // Ürünleri Dinle
-    const unsubProducts = onSnapshot(collection(db, 'products'),
-      (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data() as Product);
-        if (data.length > 0) setProducts(data);
-      },
-      (error) => {
-        console.warn("Firestore products connection failed (using fallback data):", error.message);
-      }
-    );
+    const fetchAllData = async () => {
+      try {
+        const { data: pData } = await supabase.from('products').select('*');
+        if (pData && pData.length > 0) setProducts(pData);
 
-    // Slaytları Dinle
-    const unsubSlides = onSnapshot(collection(db, 'slides'),
-      (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data() as Slide);
-        if (data.length > 0) setSlides(data.sort((a, b) => (a.id > b.id ? 1 : -1)));
-      },
-      (error) => {
-        console.warn("Firestore slides connection failed (using fallback data):", error.message);
-      }
-    );
+        const { data: sData } = await supabase.from('slides').select('*');
+        if (sData && sData.length > 0) setSlides(sData.sort((a, b) => (a.id > b.id ? 1 : -1)));
 
-    // Blog Yazılarını Dinle
-    const unsubBlog = onSnapshot(collection(db, 'blog'),
-      (snapshot) => {
-        const data = snapshot.docs.map(doc => doc.data() as BlogPost);
-        if (data.length > 0) setBlogPosts(data);
-      },
-      (error) => {
-        console.warn("Firestore blog connection failed (using fallback data):", error.message);
-      }
-    );
+        const { data: bData } = await supabase.from('blog').select('*');
+        if (bData && bData.length > 0) setBlogPosts(bData);
 
-    // Ayarları Dinle
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          setSettings(docSnap.data() as SiteSettings);
-        }
-      },
-      (error) => {
-        console.warn("Firestore settings connection failed (using fallback data):", error.message);
+        const { data: settsData } = await supabase.from('settings').select('*').eq('id', 'global').single();
+        if (settsData) setSettings(settsData);
+      } catch (err: any) {
+        console.warn("Supabase verileri alınamadı, lokal veriler kullanılıyor:", err.message);
       }
-    );
+    };
+
+    fetchAllData();
+
+    // Gerçek zamanlı değişiklikleri dinle
+    const channel = supabase.channel('schema-db-changes')
+      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+        fetchAllData(); // Herhangi bir tabloda değişiklik olursa tekrar çek
+      })
+      .subscribe();
 
     return () => {
-      unsubProducts();
-      unsubSlides();
-      unsubBlog();
-      unsubSettings();
+      supabase.removeChannel(channel);
     };
   }, []);
 
