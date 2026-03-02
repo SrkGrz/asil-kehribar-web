@@ -4,21 +4,21 @@ import { Product, AmberType, Slide, SiteSettings, BlogPost } from './types';
 export const DEFAULT_SLIDES: Slide[] = [
   {
     id: '1',
-    image: "https://images.unsplash.com/photo-1574347715003-89689f506259?q=80&w=1974&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&q=80&w=1920", // Working Amber-like dark image
     title: "Asaletin Kalbinde Amber",
     subtitle: "Doğanın milyonlarca yıllık hikayesini, en asil haliyle avuçlarınızda hissedin.",
     tag: "Nadir Parçalar • Asil Duruş"
   },
   {
     id: '2',
-    image: "https://images.unsplash.com/photo-1615655406736-b37c4fabf923?q=80&w=2070&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1596942515093-662588147814?auto=format&fit=crop&q=80&w=1920", // Working Amber jewelry image
     title: "Kadim Baltık Mirası",
     subtitle: "Kuzeyin soğuk sularından gelen sıcak parıltı. Gerçek Baltık damla kehribar koleksiyonu.",
     tag: "Baltık Koleksiyonu • Saf Enerji"
   },
   {
     id: '3',
-    image: "https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=2040&auto=format&fit=crop",
+    image: "https://images.unsplash.com/photo-1588600129881-c7207aa22aa3?auto=format&fit=crop&q=80&w=1920", // Working yellow/amber texture image
     title: "Zanaatkarın İmzası",
     subtitle: "Her bir habbede usta ellerin titiz dokunuşu. Geleneksel sanatın modern yorumu.",
     tag: "Usta İşi • El Yapımı"

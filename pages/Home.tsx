@@ -17,16 +17,20 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
   const isFavorite = (id: string) => favorites.some(p => p.id === id);
 
   useEffect(() => {
-    if (slides.length <= 1) return;
+    if (!slides || slides.length <= 1) return;
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [slides.length]);
+  }, [slides]);
 
   if (!slides || slides.length === 0) {
     return <div className="h-[75vh] bg-stone-50 flex items-center justify-center">No slides available</div>;
   }
+
+  // Ensure currentSlide is bounds-checked (defensive programming against dynamic slide arrays)
+  const safeSlideIndex = currentSlide % slides.length;
+  const activeSlide = slides[safeSlideIndex];
 
   return (
     <div className="space-y-32">
@@ -43,9 +47,9 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
               className="absolute inset-0 z-0"
             >
               <img
-                src={slides[currentSlide].image || undefined}
+                src={activeSlide?.image || undefined}
                 className="w-full h-full object-cover opacity-40"
-                alt={slides[currentSlide].title}
+                alt={activeSlide?.title || 'Slide'}
               />
               <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-transparent to-white/40 dark:to-transparent"></div>
             </motion.div>
@@ -54,22 +58,22 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
           <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
             <AnimatePresence mode="wait">
               <motion.div
-                key={currentSlide}
+                key={safeSlideIndex}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -30 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
               >
                 <span className="inline-block px-4 py-1.5 rounded-full border border-primary/40 text-[10px] font-black tracking-[0.5em] text-primary uppercase mb-8 backdrop-blur-sm">
-                  {slides[currentSlide].tag}
+                  {activeSlide?.tag}
                 </span>
                 <h1 className="font-display text-5xl md:text-8xl lg:text-9xl font-black text-stone-950 leading-tight mb-10 tracking-tight">
-                  {slides[currentSlide].title.split(' ').map((word, i) => (
+                  {activeSlide?.title?.split(' ').map((word, i) => (
                     word.toLowerCase() === 'amber' ? <span key={i} className="italic text-primary font-medium">Amber </span> : word + ' '
                   ))}
                 </h1>
                 <p className="text-xl md:text-2xl text-stone-600 italic font-display max-w-2xl mx-auto mb-14 leading-relaxed">
-                  {slides[currentSlide].subtitle}
+                  {activeSlide?.subtitle}
                 </p>
               </motion.div>
             </AnimatePresence>
@@ -89,7 +93,7 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
                 <button
                   key={i}
                   onClick={() => setCurrentSlide(i)}
-                  className={`h-1 transition-all duration-500 rounded-full ${currentSlide === i ? 'w-12 bg-primary' : 'w-4 bg-stone-950/20'}`}
+                  className={`h-1 transition-all duration-500 rounded-full ${safeSlideIndex === i ? 'w-12 bg-primary' : 'w-4 bg-stone-950/20'}`}
                 />
               ))}
             </div>

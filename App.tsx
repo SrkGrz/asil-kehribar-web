@@ -256,29 +256,49 @@ export default function App() {
   // 1. AŞAMA: Firebase Firestore ile Gerçek Zamanlı (Real-time) Senkronizasyon
   useEffect(() => {
     // Ürünleri Dinle
-    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data() as Product);
-      if (data.length > 0) setProducts(data);
-    });
+    const unsubProducts = onSnapshot(collection(db, 'products'),
+      (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data() as Product);
+        if (data.length > 0) setProducts(data);
+      },
+      (error) => {
+        console.warn("Firestore products connection failed (using fallback data):", error.message);
+      }
+    );
 
     // Slaytları Dinle
-    const unsubSlides = onSnapshot(collection(db, 'slides'), (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data() as Slide);
-      if (data.length > 0) setSlides(data.sort((a, b) => (a.id > b.id ? 1 : -1)));
-    });
+    const unsubSlides = onSnapshot(collection(db, 'slides'),
+      (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data() as Slide);
+        if (data.length > 0) setSlides(data.sort((a, b) => (a.id > b.id ? 1 : -1)));
+      },
+      (error) => {
+        console.warn("Firestore slides connection failed (using fallback data):", error.message);
+      }
+    );
 
     // Blog Yazılarını Dinle
-    const unsubBlog = onSnapshot(collection(db, 'blog'), (snapshot) => {
-      const data = snapshot.docs.map(doc => doc.data() as BlogPost);
-      if (data.length > 0) setBlogPosts(data);
-    });
+    const unsubBlog = onSnapshot(collection(db, 'blog'),
+      (snapshot) => {
+        const data = snapshot.docs.map(doc => doc.data() as BlogPost);
+        if (data.length > 0) setBlogPosts(data);
+      },
+      (error) => {
+        console.warn("Firestore blog connection failed (using fallback data):", error.message);
+      }
+    );
 
     // Ayarları Dinle
-    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
-      if (docSnap.exists()) {
-        setSettings(docSnap.data() as SiteSettings);
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'),
+      (docSnap) => {
+        if (docSnap.exists()) {
+          setSettings(docSnap.data() as SiteSettings);
+        }
+      },
+      (error) => {
+        console.warn("Firestore settings connection failed (using fallback data):", error.message);
       }
-    });
+    );
 
     return () => {
       unsubProducts();
