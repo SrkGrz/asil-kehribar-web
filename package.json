@@ -7,11 +7,11 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "dev:full": "concurrently \"npm run dev\" \"node server.js\""
   },
   "dependencies": {
     "@google/genai": "^1.41.0",
-    "@supabase/supabase-js": "^2.98.0",
     "motion": "^12.34.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

@@ -14,7 +14,7 @@ import { Certificates } from './pages/Certificates';
 import { ProductDetail } from './pages/ProductDetail';
 import { CartItem, Product, Slide, SiteSettings, BlogPost } from './types';
 import { MOCK_PRODUCTS, DEFAULT_SLIDES, DEFAULT_SETTINGS, DEFAULT_BLOG_POSTS } from './constants';
-import { supabase } from './supabase';
+import { fetchApi } from './api';
 
 const Navbar = ({ cartCount, favCount }: { cartCount: number, favCount: number }) => {
   const [isDark, setIsDark] = useState(false);
@@ -252,38 +252,27 @@ export default function App() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
 
-  // 1. AŞAMA: Supabase ile Gerçek Zamanlı (Real-time) Veri Çekme
+  // 1. AŞAMA: MongoDB Atlas tabanlı API üzerinden Veri Çekme
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const { data: pData } = await supabase.from('products').select('*');
+        const [pData, sData, bData, settsData] = await Promise.all([
+          fetchApi('/api/products').catch(() => null),
+          fetchApi('/api/slides').catch(() => null),
+          fetchApi('/api/blog').catch(() => null),
+          fetchApi('/api/settings').catch(() => null)
+        ]);
+
         if (pData && pData.length > 0) setProducts(pData);
-
-        const { data: sData } = await supabase.from('slides').select('*');
-        if (sData && sData.length > 0) setSlides(sData.sort((a, b) => (a.id > b.id ? 1 : -1)));
-
-        const { data: bData } = await supabase.from('blog').select('*');
+        if (sData && sData.length > 0) setSlides(sData.sort((a: any, b: any) => (a.id > b.id ? 1 : -1)));
         if (bData && bData.length > 0) setBlogPosts(bData);
-
-        const { data: settsData } = await supabase.from('settings').select('*').eq('id', 'global').single();
         if (settsData) setSettings(settsData);
       } catch (err: any) {
-        console.warn("Supabase verileri alınamadı, lokal veriler kullanılıyor:", err.message);
+        console.warn("API verileri alınamadı, lokal veriler kullanılıyor:", err.message);
       }
     };
 
     fetchAllData();
-
-    // Gerçek zamanlı değişiklikleri dinle
-    const channel = supabase.channel('schema-db-changes')
-      .on('postgres_changes', { event: '*', schema: 'public' }, () => {
-        fetchAllData(); // Herhangi bir tabloda değişiklik olursa tekrar çek
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const addToCart = (product: Product) => {

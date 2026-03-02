@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
-import { supabase } from '../supabase';
+import { fetchApi } from '../api';
 import { AmberType, Product, Slide, SiteSettings, BlogPost } from '../types';
 type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users';
 
@@ -39,34 +39,26 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
 
   useEffect(() => {
     if (activeView === 'users' && userRole === 'admin') {
-      supabase.from('users').select('*').then(({ data, error }) => {
-        if (error) {
-          console.warn('Kullanıcılar alınamadı, lokal liste aktif.', error);
-          if (usersList.length === 0) {
-            setUsersList([{ id: 'demo1', email: 'admin@asilkehribar.com', role: 'admin', status: 'active' }, { id: 'demo2', email: 'editor@asilkehribar.com', role: 'editor', status: 'active' }]);
-          }
+      fetchApi('/api/users').then(data => {
+        setUsersList(data);
+      }).catch(e => {
+        console.warn('Kullanıcılar alınamadı, lokal liste aktif.', e);
+        if (usersList.length === 0) {
+          setUsersList([{ id: 'demo1', email: 'admin@asilkehribar.com', role: 'admin', status: 'active' }, { id: 'demo2', email: 'editor@asilkehribar.com', role: 'editor', status: 'active' }]);
         }
-        if (data) setUsersList(data);
       });
     }
   }, [activeView, userRole]);
 
   const handleToggleUserBlock = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-    supabase.from('users').update({ status: newStatus }).eq('id', id).then(({ error }) => {
-      if (error) console.warn("Lokal modda bloklama simüle ediliyor.");
-    });
+    fetchApi(`/api/users/${id}/block`, { method: 'POST', body: JSON.stringify({ status: newStatus }) }).catch(e => console.warn(e));
     setUsersList(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
     alert(newStatus === 'blocked' ? 'Kullanıcı başarıyla engellendi.' : 'Kullanıcının engeli kaldırıldı.');
   };
 
   const handleResetPasswordAdmin = async (email: string) => {
-    try {
-      await supabase.auth.resetPasswordForEmail(email);
-      alert(`${email} adresine şifre sıfırlama bağlantısı gönderildi.`);
-    } catch (e) {
-      alert("Şifre sıfırlama e-postası gönderilemedi. E-posta adresi geçerli olmayabilir veya demo modundasınız.");
-    }
+    alert("MongoDB Atlas backend formatı için şifre sıfırlama e-posta servisi (SMTP) ayarlanmalıdır. Lokal testtesiniz.");
   };
 
   const handleCreateUser = async (e: React.FormEvent) => {
@@ -75,16 +67,9 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setNewUserSuccess('');
     try {
       try {
-        const { data, error } = await supabase.auth.signUp({ email: newUserEmail, password: newUserPass });
-        if (error) throw error;
-        if (data.user) {
-          await supabase.from('users').insert({ id: data.user.id, email: newUserEmail, role: newUserRole });
-          // Note: signUp auto-logs in. A full implementation requires supabase.auth.admin.createUser. 
-          // For now, we sign out to preserve the admin session.
-          await supabase.auth.signOut();
-        }
+        await fetchApi('/api/auth/register', { method: 'POST', body: JSON.stringify({ email: newUserEmail, password: newUserPass, role: newUserRole }) });
       } catch (dbErr: any) {
-        console.warn("Firebase Auth/DB unavailable, handling locally:", dbErr.message);
+        console.warn("API unavailable, handling locally:", dbErr.message);
       }
       const newMockUser = { id: Math.random().toString(), email: newUserEmail, role: newUserRole, status: 'active' };
       setUsersList(prev => [newMockUser, ...prev]);
@@ -97,50 +82,26 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      handleSession(session);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      handleSession(session);
-    });
-
-    const handleSession = async (session: any) => {
-      const user = session?.user;
-      if (user) {
-        setAuthUser(user);
-        setIsAdminAuthenticated(true);
-        setUserRole('admin');
-        try {
-          const { data, error } = await supabase.from('users').select('*').eq('id', user.id).maybeSingle();
-          if (data) {
-            if (data.status === 'blocked') {
-              alert("Hesabınız yöneticiler tarafından engellenmiştir.");
-              await supabase.auth.signOut();
-              return;
-            }
-            setUserRole(data.role || 'editor');
-          } else {
-            const { data: allUsers } = await supabase.from('users').select('*').limit(1);
-            if (!allUsers || allUsers.length === 0) {
-              await supabase.from('users').insert({ id: user.id, email: user.email, role: 'admin' });
-              setUserRole('admin');
-            } else {
-              await supabase.from('users').insert({ id: user.id, email: user.email, role: 'editor' });
-              setUserRole('editor');
-            }
+    const initSession = async () => {
+      try {
+        const { user } = await fetchApi('/api/auth/session');
+        if (user) {
+          if (user.status === 'blocked') {
+            alert("Hesabınız yöneticiler tarafından engellenmiştir.");
+            localStorage.removeItem('asil_auth_token');
+            return;
           }
-        } catch (e: any) {
-          console.warn("Supabase unreachable, defaulting to 'admin' role:", e.message);
+          setAuthUser(user);
+          setIsAdminAuthenticated(true);
+          setUserRole(user.role);
         }
-      } else {
+      } catch (err) {
         setAuthUser(null);
         setIsAdminAuthenticated(false);
         setUserRole(null);
       }
     };
-
-    return () => subscription.unsubscribe();
+    initSession();
   }, []);
 
   // Password Change State
@@ -200,12 +161,12 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     if (!id) id = Date.now().toString();
 
     const newPost = { ...editingBlogPost, id } as BlogPost;
-    await supabase.from('blog').upsert(newPost);
+    await fetchApi('/api/blog', { method: 'POST', body: JSON.stringify(newPost) });
     setIsEditingBlog(false);
   };
 
   const deleteBlogPost = async (id: string) => {
-    await supabase.from('blog').delete().eq('id', id);
+    await fetchApi(`/api/blog/${id}`, { method: 'DELETE' });
   };
 
   const startEditBlog = (post: BlogPost) => {
@@ -256,24 +217,14 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: emailInput, password: inputPass });
-      if (error) throw error;
-      setError('');
-    } catch (err: any) {
-      if (err.message.includes("Invalid login credentials") || err.message.includes("not found")) {
-        try {
-          const { data, error } = await supabase.auth.signUp({ email: emailInput, password: inputPass });
-          if (error) throw error;
-          if (data.user) {
-            await supabase.from('users').insert({ id: data.user.id, email: emailInput, role: 'admin' });
-          }
-          setError('');
-        } catch (e2) {
-          setError('Hatalı giriş veya şifre!');
-        }
-      } else {
-        setError('Hatalı giriş veya şifre!');
+      const response = await fetchApi('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: emailInput, password: inputPass }) });
+      if (response.token) {
+        localStorage.setItem('asil_auth_token', response.token);
+        setError('');
+        window.location.reload();
       }
+    } catch (err: any) {
+      setError(err.message || 'Hatalı giriş veya şifre!');
     }
   };
 
@@ -292,12 +243,11 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     }
 
     try {
-      const { error } = await supabase.auth.updateUser({ password: passChange.new });
-      if (error) throw error;
+      await fetchApi('/api/auth/updatePassword', { method: 'POST', body: JSON.stringify({ password: passChange.new }) });
       setPassSuccess('Şifreniz başarıyla güncellendi.');
       setPassChange({ current: '', new: '', confirm: '' });
     } catch (err: any) {
-      setError('Şifre güncellenemedi veya oturum süresi dolmuş!');
+      setError('Şifre güncellenemedi: ' + err.message);
     }
   };
 
@@ -348,13 +298,13 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
   };
 
   const deleteProduct = (id: string) => {
-    supabase.from('products').delete().eq('id', id).then(({ error }) => { if (error) console.warn(error) });
+    fetchApi(`/api/products/${id}`, { method: 'DELETE' }).catch(e => console.warn(e));
   };
 
   const saveProduct = () => {
     const id = editingProduct.id || Math.random().toString(36).substr(2, 9);
     const newProd = { ...editingProduct, id } as Product;
-    supabase.from('products').upsert(newProd).then(({ error }) => { if (error) console.warn(error) });
+    fetchApi('/api/products', { method: 'POST', body: JSON.stringify(newProd) }).catch(e => console.warn(e));
     setIsEditing(false);
     setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
   };
@@ -375,8 +325,8 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         image: editingSlide.image || ''
       } as Slide;
 
-      supabase.from('slides').upsert(newSlide).then(({ error }) => {
-        if (error) console.warn("Supabase error:", error.message);
+      fetchApi('/api/slides', { method: 'POST', body: JSON.stringify(newSlide) }).catch(e => {
+        console.warn("API error:", e.message);
       });
 
       setSlides(prev => {
@@ -394,8 +344,8 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
   };
 
   const deleteSlide = (id: string) => {
-    supabase.from('slides').delete().eq('id', id).then(({ error }) => {
-      if (error) console.warn("Supabase error:", error.message);
+    fetchApi(`/api/slides/${id}`, { method: 'DELETE' }).catch(e => {
+      console.warn("API error:", e.message);
     });
     setSlides(prev => prev.filter(slide => slide.id !== id));
   };
@@ -1681,7 +1631,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
             <div className="size-8 rounded-full bg-stone-950 text-white flex items-center justify-center font-black text-xs">A</div>
             <div className="flex-1">
               <p className="text-xs font-bold truncate">{userRole === 'admin' ? 'Saray Nazırı' : 'İçerik Editörü'}</p>
-              <button onClick={() => supabase.auth.signOut()} className="text-[9px] font-black text-primary uppercase hover:underline">Güvenli Çıkış</button>
+              <button onClick={() => { localStorage.removeItem('asil_auth_token'); window.location.reload(); }} className="text-[9px] font-black text-primary uppercase hover:underline">Güvenli Çıkış</button>
             </div>
           </div>
         </div>
