@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
+import { doc, setDoc, deleteDoc, collection, getDocs, getDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { db, auth, secondaryAuth } from '../firebase';
 import { AmberType, Product, Slide, SiteSettings, BlogPost } from '../types';
-
-type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog';
+type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users';
 
 const DEFAULT_PASSWORD = "admin";
 
@@ -20,13 +22,65 @@ interface AdminProps {
 }
 
 export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, setSlides, settings, setSettings, blogPosts, setBlogPosts }) => {
-  // Persistence for password
-  const [adminPassword, setAdminPassword] = useState(() => localStorage.getItem('asil_admin_pass') || DEFAULT_PASSWORD);
-
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+  const [authUser, setAuthUser] = useState<any>(null);
+  const [userRole, setUserRole] = useState<'admin' | 'editor' | null>(null);
+  // Application State
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
+  const [emailInput, setEmailInput] = useState('');
   const [inputPass, setInputPass] = useState('');
   const [error, setError] = useState('');
+
+  // User Management
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserPass, setNewUserPass] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'admin' | 'editor'>('editor');
+  const [newUserError, setNewUserError] = useState('');
+  const [newUserSuccess, setNewUserSuccess] = useState('');
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNewUserError('');
+    setNewUserSuccess('');
+    try {
+      const cred = await createUserWithEmailAndPassword(secondaryAuth, newUserEmail, newUserPass);
+      await setDoc(doc(db, 'users', cred.user.uid), { email: newUserEmail, role: newUserRole });
+      setNewUserSuccess('Kullanıcı başarıyla oluşturuldu!');
+      setNewUserEmail('');
+      setNewUserPass('');
+      await signOut(secondaryAuth);
+    } catch (err: any) {
+      setNewUserError('Kullanıcı oluşturulamadı: ' + err.message);
+    }
+  };
+
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        setAuthUser(user);
+        setIsAdminAuthenticated(true);
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists()) {
+          setUserRole(userDoc.data().role || 'editor');
+        } else {
+          // İlk kullanıcı kayıt olursa admin olsun
+          const snapshot = await getDocs(collection(db, 'users'));
+          if (snapshot.empty) {
+            await setDoc(doc(db, 'users', user.uid), { email: user.email, role: 'admin' });
+            setUserRole('admin');
+          } else {
+            await setDoc(doc(db, 'users', user.uid), { email: user.email, role: 'editor' });
+            setUserRole('editor');
+          }
+        }
+      } else {
+        setAuthUser(null);
+        setIsAdminAuthenticated(false);
+        setUserRole(null);
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // Password Change State
   const [passChange, setPassChange] = useState({
@@ -78,19 +132,19 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
   });
 
-  const saveBlogPost = () => {
+  const saveBlogPost = async () => {
     if (!editingBlogPost.title || !editingBlogPost.content) return;
 
-    if (editingBlogPost.id) {
-      setBlogPosts(blogPosts.map(p => p.id === editingBlogPost.id ? editingBlogPost as BlogPost : p));
-    } else {
-      setBlogPosts([...blogPosts, { ...editingBlogPost, id: Date.now().toString() } as BlogPost]);
-    }
+    let id = editingBlogPost.id;
+    if (!id) id = Date.now().toString();
+
+    const newPost = { ...editingBlogPost, id } as BlogPost;
+    await setDoc(doc(db, 'blog', id), newPost);
     setIsEditingBlog(false);
   };
 
-  const deleteBlogPost = (id: string) => {
-    setBlogPosts(blogPosts.filter(p => p.id !== id));
+  const deleteBlogPost = async (id: string) => {
+    await deleteDoc(doc(db, 'blog', id));
   };
 
   const startEditBlog = (post: BlogPost) => {
@@ -138,28 +192,34 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     }
   };
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (inputPass === adminPassword) {
-      setIsAdminAuthenticated(true);
+    try {
+      await signInWithEmailAndPassword(auth, emailInput, inputPass);
       setError('');
-      setInputPass('');
-    } else {
-      setError('Hatalı saray şifresi!');
+    } catch (err: any) {
+      // Create first user if not exists (super admin creation mode)
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
+        try {
+          const cred = await createUserWithEmailAndPassword(auth, emailInput, inputPass);
+          await setDoc(doc(db, 'users', cred.user.uid), { email: emailInput, role: 'admin' });
+          setError('');
+        } catch (e2) {
+          setError('Hatalı giriş veya şifre!');
+        }
+      } else {
+        setError('Hatalı giriş veya şifre!');
+      }
     }
   };
 
-  const handlePasswordChange = (e: React.FormEvent) => {
+  const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setPassSuccess('');
 
-    if (passChange.current !== adminPassword) {
-      setError('Mevcut şifre hatalı!');
-      return;
-    }
-    if (passChange.new.length < 4) {
-      setError('Yeni şifre en az 4 karakter olmalıdır!');
+    if (passChange.new.length < 6) {
+      setError('Yeni şifre en az 6 karakter olmalıdır!');
       return;
     }
     if (passChange.new !== passChange.confirm) {
@@ -167,10 +227,19 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
       return;
     }
 
-    setAdminPassword(passChange.new);
-    localStorage.setItem('asil_admin_pass', passChange.new);
-    setPassSuccess('Şifreniz başarıyla güncellendi.');
-    setPassChange({ current: '', new: '', confirm: '' });
+    try {
+      if (auth.currentUser && auth.currentUser.email) {
+        const credential = EmailAuthProvider.credential(auth.currentUser.email, passChange.current);
+        await reauthenticateWithCredential(auth.currentUser, credential);
+        await updatePassword(auth.currentUser, passChange.new);
+        setPassSuccess('Şifreniz başarıyla güncellendi.');
+        setPassChange({ current: '', new: '', confirm: '' });
+      } else {
+        setError('Oturum hatası, lütfen tekrar giriş yapın.');
+      }
+    } catch (err: any) {
+      setError('Mevcut şifre hatalı veya oturum süresi dolmuş!');
+    }
   };
 
   const handleSmartImport = async () => {
@@ -219,34 +288,28 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setIsEditing(true);
   };
 
-  const deleteProduct = (id: string) => {
-    setProducts(prev => prev.filter(p => p.id !== id));
+  const deleteProduct = async (id: string) => {
+    await deleteDoc(doc(db, 'products', id));
   };
 
-  const saveProduct = () => {
-    if (editingProduct.id) {
-      setProducts(prev => prev.map(p => p.id === editingProduct.id ? (editingProduct as Product) : p));
-    } else {
-      const newProd = { ...editingProduct, id: Math.random().toString(36).substr(2, 9) } as Product;
-      setProducts(prev => [newProd, ...prev]);
-    }
+  const saveProduct = async () => {
+    const id = editingProduct.id || Math.random().toString(36).substr(2, 9);
+    const newProd = { ...editingProduct, id } as Product;
+    await setDoc(doc(db, 'products', id), newProd);
     setIsEditing(false);
     setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
   };
 
-  const saveSlide = () => {
-    if (editingSlide.id) {
-      setSlides(prev => prev.map(s => s.id === editingSlide.id ? (editingSlide as Slide) : s));
-    } else {
-      const newSlide = { ...editingSlide, id: Math.random().toString(36).substr(2, 9) } as Slide;
-      setSlides(prev => [...prev, newSlide]);
-    }
+  const saveSlide = async () => {
+    const id = editingSlide.id || Math.random().toString(36).substr(2, 9);
+    const newSlide = { ...editingSlide, id } as Slide;
+    await setDoc(doc(db, 'slides', id), newSlide);
     setIsEditingSlide(false);
     setEditingSlide({ title: '', subtitle: '', tag: '', image: '' });
   };
 
-  const deleteSlide = (id: string) => {
-    setSlides(prev => prev.filter(s => s.id !== id));
+  const deleteSlide = async (id: string) => {
+    await deleteDoc(doc(db, 'slides', id));
   };
 
   if (!isAdminAuthenticated) {
@@ -260,11 +323,19 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
           <p className="text-stone-500 text-sm mb-8">Devam etmek için yönetici şifrenizi giriniz.</p>
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <input
+              type="email"
+              placeholder="E-posta Adresi"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              className="w-full bg-zinc-50 dark:bg-stone-50 border-none rounded-2xl p-4 font-bold text-center focus:ring-2 focus:ring-primary text-stone-950 mb-4"
+              autoFocus
+            />
+            <input
               type="password"
+              placeholder="Şifre"
               value={inputPass}
               onChange={(e) => setInputPass(e.target.value)}
               className="w-full bg-zinc-50 dark:bg-stone-50 border-none rounded-2xl p-4 font-bold text-center focus:ring-2 focus:ring-primary text-stone-950"
-              autoFocus
             />
             {error && <p className="text-red-500 text-xs font-bold uppercase">{error}</p>}
             <button type="submit" className="w-full bg-primary text-stone-950 font-black py-4 rounded-2xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
@@ -1404,6 +1475,28 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
           </div>
         );
 
+      case 'users':
+        if (userRole !== 'admin') {
+          return <div className="max-w-5xl mx-auto py-20 text-center font-bold text-red-500 bg-red-50 rounded-2xl dark:bg-red-950">Bu sayfayı görüntüleme yetkiniz yok. Sadece Saray Nazırı (Admin) girebilir.</div>;
+        }
+        return (
+          <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+            <h1 className="text-4xl font-display font-black italic mb-8">Kullanıcı Yönetimi</h1>
+            <p className="text-stone-500 mb-8">Bu sayfadan yeni alt yöneticiler ve editörler ekleyebilirsiniz. (Sadece Yöneticiler bu alanı görebilir)</p>
+            <form onSubmit={handleCreateUser} className="space-y-4 max-w-md bg-white dark:bg-stone-950 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+              <input type="email" placeholder="Kullanıcı E-posta" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
+              <input type="password" placeholder="Geçici Şifre (En az 6 karakter)" value={newUserPass} onChange={e => setNewUserPass(e.target.value)} required minLength={6} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
+              <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as any)} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold outline-none cursor-pointer">
+                <option value="editor">İçerik Editörü (Sadece Blog / Ürün ekleyebilir)</option>
+                <option value="admin">Saray Nazırı (Tam Yetkili)</option>
+              </select>
+              {newUserError && <p className="text-red-500 text-xs font-bold">{newUserError}</p>}
+              {newUserSuccess && <p className="text-green-500 text-xs font-bold">{newUserSuccess}</p>}
+              <button type="submit" className="w-full bg-primary text-stone-950 font-black py-4 rounded-xl shadow-lg hover:scale-105 transition-all">KULLANICIYI OLUŞTUR</button>
+            </form>
+          </div>
+        );
+
       default:
         return (
           <div className="max-w-5xl mx-auto flex flex-col items-center justify-center py-20 text-center">
@@ -1435,7 +1528,8 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
             { id: 'integrations', icon: 'hub', label: 'Entegrasyonlar' },
             { id: 'orders', icon: 'shopping_cart', label: 'Siparişler' },
             { id: 'customers', icon: 'group', label: 'Koleksiyoncular' },
-            { id: 'settings', icon: 'settings', label: 'Ayarlar' }
+            { id: 'settings', icon: 'settings', label: 'Ayarlar' },
+            ...(userRole === 'admin' ? [{ id: 'users', icon: 'manage_accounts', label: 'Kullanıcılar' }] : [])
           ].map(item => (
             <button
               key={item.id}
@@ -1461,8 +1555,8 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-full bg-stone-950 text-white flex items-center justify-center font-black text-xs">A</div>
             <div className="flex-1">
-              <p className="text-xs font-bold truncate">Saray Nazırı</p>
-              <button onClick={() => setIsAdminAuthenticated(false)} className="text-[9px] font-black text-primary uppercase hover:underline">Güvenli Çıkış</button>
+              <p className="text-xs font-bold truncate">{userRole === 'admin' ? 'Saray Nazırı' : 'İçerik Editörü'}</p>
+              <button onClick={() => signOut(auth)} className="text-[9px] font-black text-primary uppercase hover:underline">Güvenli Çıkış</button>
             </div>
           </div>
         </div>

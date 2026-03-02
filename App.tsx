@@ -14,6 +14,8 @@ import { Certificates } from './pages/Certificates';
 import { ProductDetail } from './pages/ProductDetail';
 import { CartItem, Product, Slide, SiteSettings, BlogPost } from './types';
 import { MOCK_PRODUCTS, DEFAULT_SLIDES, DEFAULT_SETTINGS, DEFAULT_BLOG_POSTS } from './constants';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
+import { db } from './firebase';
 
 const Navbar = ({ cartCount, favCount }: { cartCount: number, favCount: number }) => {
   const [isDark, setIsDark] = useState(false);
@@ -251,92 +253,40 @@ export default function App() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
 
-  // Load State
-  const [isDataLoaded, setIsDataLoaded] = useState(false);
-  const API_URL = "/api/backend.php"; // Değiştirmeyin; üretimde (production) kök klasörden alacak.
-
-  // 1. AŞAMA: SAYFA AÇILINCA API'DEN (VERİTABANINDAN) VERİLERİ ÇEK
+  // 1. AŞAMA: Firebase Firestore ile Gerçek Zamanlı (Real-time) Senkronizasyon
   useEffect(() => {
-    const fetchAllData = async () => {
-      try {
-        console.log("Sunucudan veritabanı ayarları çekiliyor...");
+    // Ürünleri Dinle
+    const unsubProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as Product);
+      if (data.length > 0) setProducts(data);
+    });
 
-        // Ürünler
-        const proRes = await fetch(`${API_URL}?action=get_products`);
-        if (proRes.ok) {
-          const pData = await proRes.json();
-          if (Array.isArray(pData) && pData.length > 0) setProducts(pData);
-        }
+    // Slaytları Dinle
+    const unsubSlides = onSnapshot(collection(db, 'slides'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as Slide);
+      if (data.length > 0) setSlides(data.sort((a, b) => (a.id > b.id ? 1 : -1)));
+    });
 
-        // Slaytlar
-        const slideRes = await fetch(`${API_URL}?action=get_slides`);
-        if (slideRes.ok) {
-          const sData = await slideRes.json();
-          if (Array.isArray(sData) && sData.length > 0) setSlides(sData);
-        }
+    // Blog Yazılarını Dinle
+    const unsubBlog = onSnapshot(collection(db, 'blog'), (snapshot) => {
+      const data = snapshot.docs.map(doc => doc.data() as BlogPost);
+      if (data.length > 0) setBlogPosts(data);
+    });
 
-        // Blog
-        const blogRes = await fetch(`${API_URL}?action=get_blog`);
-        if (blogRes.ok) {
-          const bData = await blogRes.json();
-          if (Array.isArray(bData) && bData.length > 0) setBlogPosts(bData);
-        }
-
-        // Ayarlar
-        const setRes = await fetch(`${API_URL}?action=get_settings`);
-        if (setRes.ok) {
-          const setObj = await setRes.json();
-          if (Object.keys(setObj).length > 0) setSettings(setObj as SiteSettings);
-        }
-
-        setIsDataLoaded(true); // Veriler güvenle çekildi, artık kaydetmeye hazırız
-      } catch (err) {
-        console.error("Veritabanına bağlanılamadı, varsayılan (Yerel) sistem kullanılıyor.", err);
-        // Hata durumunda (DB henüz yoksa vb.) yine de ekranın açılmasını sağla
-        setIsDataLoaded(true);
+    // Ayarları Dinle
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (docSnap) => {
+      if (docSnap.exists()) {
+        setSettings(docSnap.data() as SiteSettings);
       }
+    });
+
+    return () => {
+      unsubProducts();
+      unsubSlides();
+      unsubBlog();
+      unsubSettings();
     };
-
-    fetchAllData();
   }, []);
-
-  // 2. AŞAMA: BİR ŞEY DEĞİŞTİĞİNDE VERİTABANINA (API) GERİ YAZ
-  useEffect(() => {
-    if (!isDataLoaded) return; // Henüz veri çekilmeden boş datayı kaydetmesin
-    fetch(`${API_URL}?action=save_products`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(products)
-    }).catch(console.error);
-    localStorage.setItem('asil_products', JSON.stringify(products)); // Yedek amaçlı locale de yaz
-  }, [products, isDataLoaded]);
-
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    fetch(`${API_URL}?action=save_slides`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(slides)
-    }).catch(console.error);
-  }, [slides, isDataLoaded]);
-
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    fetch(`${API_URL}?action=save_settings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings)
-    }).catch(console.error);
-  }, [settings, isDataLoaded]);
-
-  useEffect(() => {
-    if (!isDataLoaded) return;
-    fetch(`${API_URL}?action=save_blog`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(blogPosts)
-    }).catch(console.error);
-  }, [blogPosts, isDataLoaded]);
 
   const addToCart = (product: Product) => {
     setCart(prev => {
