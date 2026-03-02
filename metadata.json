@@ -1,0 +1,7 @@
+{
+  "name": "Asil Kehribar",
+  "description": "Nadir ve asil kehribar koleksiyonu sunan premium e-ticaret platformu.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
