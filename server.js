@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Support base64 image uploads
 
 const JWT_SECRET = process.env.JWT_SECRET || 'asil-kehribar-super-secret-key-2026';
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Vercel-Admin-atlas-lime-anchor:<S844g844>@atlas-lime-anchor.kykuquw.mongodb.net/asil-kehribar?appName=atlas-lime-anchor";
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Vercel-Admin-atlas-lime-anchor:L6LMwINSZl1UisUB@atlas-lime-anchor.kykuquw.mongodb.net/asil-kehribar?retryWrites=true&w=majority";
 
 // Connect to MongoDB Atlas
 const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } };
