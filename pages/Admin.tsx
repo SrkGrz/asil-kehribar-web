@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
-import { doc, setDoc, deleteDoc, collection, getDocs, getDoc } from 'firebase/firestore';
-import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
+import { doc, setDoc, deleteDoc, collection, getDocs, getDoc, updateDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth, secondaryAuth } from '../firebase';
 import { AmberType, Product, Slide, SiteSettings, BlogPost } from '../types';
 type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users';
@@ -37,6 +37,33 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
   const [newUserRole, setNewUserRole] = useState<'admin' | 'editor'>('editor');
   const [newUserError, setNewUserError] = useState('');
   const [newUserSuccess, setNewUserSuccess] = useState('');
+  const [usersList, setUsersList] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (activeView === 'users' && userRole === 'admin') {
+      getDocs(collection(db, 'users')).then(snap => {
+        setUsersList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }).catch(e => console.warn('Kullanıcılar alınamadı', e));
+    }
+  }, [activeView, userRole]);
+
+  const handleToggleUserBlock = async (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
+    try {
+      await updateDoc(doc(db, 'users', id), { status: newStatus });
+    } catch (e) { console.warn("Lokal modda bloklama simüle ediliyor."); }
+    setUsersList(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
+    alert(newStatus === 'blocked' ? 'Kullanıcı başarıyla engellendi.' : 'Kullanıcının engeli kaldırıldı.');
+  };
+
+  const handleResetPasswordAdmin = async (email: string) => {
+    try {
+      await sendPasswordResetEmail(auth, email);
+      alert(`${email} adresine şifre sıfırlama bağlantısı gönderildi.`);
+    } catch (e) {
+      alert("Şifre sıfırlama e-postası gönderilemedi. E-posta adresi geçerli olmayabilir veya demo modundasınız.");
+    }
+  };
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,6 +77,8 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
       } catch (dbErr: any) {
         console.warn("Firebase Auth/DB unavailable, handling locally:", dbErr.message);
       }
+      const newMockUser = { id: Math.random().toString(), email: newUserEmail, role: newUserRole, status: 'active' };
+      setUsersList(prev => [newMockUser, ...prev]);
       setNewUserSuccess('Kullanıcı başarıyla oluşturuldu! (Lokal / Demo Modu)');
       setNewUserEmail('');
       setNewUserPass('');
@@ -68,7 +97,13 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         try {
           const userDoc = await getDoc(doc(db, 'users', user.uid));
           if (userDoc.exists()) {
-            setUserRole(userDoc.data().role || 'editor');
+            const data = userDoc.data();
+            if (data.status === 'blocked') {
+              alert("Hesabınız yöneticiler tarafından engellenmiştir.");
+              await signOut(auth);
+              return;
+            }
+            setUserRole(data.role || 'editor');
           } else {
             // İlk kullanıcı kayıt olursa admin olsun
             const snapshot = await getDocs(collection(db, 'users'));
@@ -1523,20 +1558,57 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
           return <div className="max-w-5xl mx-auto py-20 text-center font-bold text-red-500 bg-red-50 rounded-2xl dark:bg-red-950">Bu sayfayı görüntüleme yetkiniz yok. Sadece Saray Nazırı (Admin) girebilir.</div>;
         }
         return (
-          <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
-            <h1 className="text-4xl font-display font-black italic mb-8">Kullanıcı Yönetimi</h1>
-            <p className="text-stone-500 mb-8">Bu sayfadan yeni alt yöneticiler ve editörler ekleyebilirsiniz. (Sadece Yöneticiler bu alanı görebilir)</p>
-            <form onSubmit={handleCreateUser} className="space-y-4 max-w-md bg-white dark:bg-stone-950 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-              <input type="email" placeholder="Kullanıcı E-posta" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
-              <input type="password" placeholder="Geçici Şifre (En az 6 karakter)" value={newUserPass} onChange={e => setNewUserPass(e.target.value)} required minLength={6} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
-              <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as any)} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold outline-none cursor-pointer">
-                <option value="editor">İçerik Editörü (Sadece Blog / Ürün ekleyebilir)</option>
-                <option value="admin">Saray Nazırı (Tam Yetkili)</option>
-              </select>
-              {newUserError && <p className="text-red-500 text-xs font-bold">{newUserError}</p>}
-              {newUserSuccess && <p className="text-green-500 text-xs font-bold">{newUserSuccess}</p>}
-              <button type="submit" className="w-full bg-primary text-stone-950 font-black py-4 rounded-xl shadow-lg hover:scale-105 transition-all">KULLANICIYI OLUŞTUR</button>
-            </form>
+          <div className="max-w-5xl mx-auto animate-in fade-in duration-500 space-y-12">
+            <div>
+              <h1 className="text-4xl font-display font-black italic mb-8">Kullanıcı Yönetimi</h1>
+              <p className="text-stone-500 mb-8">Bu sayfadan yeni alt yöneticiler ve editörler ekleyebilirsiniz. Ayrıca mevcut kullanıcıları engelleyebilir ve şifrelerini sıfırlayabilirsiniz.</p>
+              <form onSubmit={handleCreateUser} className="space-y-4 max-w-md bg-white dark:bg-stone-950 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <input type="email" placeholder="Kullanıcı E-posta" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
+                <input type="password" placeholder="Geçici Şifre (En az 6 karakter)" value={newUserPass} onChange={e => setNewUserPass(e.target.value)} required minLength={6} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
+                <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as any)} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold outline-none cursor-pointer">
+                  <option value="editor">İçerik Editörü (Sadece Blog / Ürün ekleyebilir)</option>
+                  <option value="admin">Saray Nazırı (Tam Yetkili)</option>
+                </select>
+                {newUserError && <p className="text-red-500 text-xs font-bold">{newUserError}</p>}
+                {newUserSuccess && <p className="text-green-500 text-xs font-bold">{newUserSuccess}</p>}
+                <button type="submit" className="w-full bg-primary text-stone-950 font-black py-4 rounded-xl shadow-lg hover:scale-105 transition-all">KULLANICIYI OLUŞTUR</button>
+              </form>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-bold mb-6">Mevcut Kullanıcılar</h2>
+              <div className="bg-white dark:bg-stone-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
+                <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
+                  {usersList.length === 0 ? (
+                    <li className="p-8 text-center text-stone-500 font-bold">Herhangi bir kullanıcı bulunamadı veya veritabanı bağlantısı yok.</li>
+                  ) : usersList.map(u => (
+                    <li key={u.id} className="p-6 flex flex-col md:flex-row items-center justify-between gap-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition-colors">
+                      <div className="flex flex-col flex-1">
+                        <span className="font-bold text-base flex items-center gap-2">
+                          <span className="material-symbols-outlined text-sm text-stone-400">person</span>
+                          {u.email}
+                        </span>
+                        <div className="flex items-center gap-3 mt-2">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-primary">{u.role === 'admin' ? 'Saray Nazırı' : 'Editör'}</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full border ${u.status === 'blocked' ? 'bg-red-50 text-red-500 border-red-200 dark:bg-red-500/10' : 'bg-green-50 text-green-500 border-green-200 dark:bg-green-500/10'}`}>
+                            {u.status === 'blocked' ? 'Engellendi' : 'Aktif'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 justify-end">
+                        <button onClick={() => handleResetPasswordAdmin(u.email)} className="px-4 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-stone-950 dark:text-white text-xs font-bold hover:bg-stone-200 dark:hover:bg-zinc-700 transition flex items-center gap-2 border border-zinc-200 dark:border-zinc-700">
+                          <span className="material-symbols-outlined text-sm">key</span> Şifre Sıfırla
+                        </button>
+                        <button onClick={() => handleToggleUserBlock(u.id, u.status || 'active')} className={`border px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${u.status === 'blocked' ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 dark:bg-green-500/10 dark:hover:bg-green-500/20' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20'}`}>
+                          <span className="material-symbols-outlined text-sm">{u.status === 'blocked' ? 'check_circle' : 'block'}</span>
+                          {u.status === 'blocked' ? 'Engeli Kaldır' : 'Kullanıcıyı Engelle'}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           </div>
         );
 
