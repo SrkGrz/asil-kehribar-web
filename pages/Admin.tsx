@@ -43,15 +43,18 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     if (activeView === 'users' && userRole === 'admin') {
       getDocs(collection(db, 'users')).then(snap => {
         setUsersList(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      }).catch(e => console.warn('Kullanıcılar alınamadı', e));
+      }).catch(e => {
+        console.warn('Kullanıcılar alınamadı, lokal liste aktif.', e);
+        if (usersList.length === 0) {
+          setUsersList([{ id: 'demo1', email: 'admin@asilkehribar.com', role: 'admin', status: 'active' }, { id: 'demo2', email: 'editor@asilkehribar.com', role: 'editor', status: 'active' }]);
+        }
+      });
     }
   }, [activeView, userRole]);
 
   const handleToggleUserBlock = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-    try {
-      await updateDoc(doc(db, 'users', id), { status: newStatus });
-    } catch (e) { console.warn("Lokal modda bloklama simüle ediliyor."); }
+    updateDoc(doc(db, 'users', id), { status: newStatus }).catch(e => console.warn("Lokal modda bloklama simüle ediliyor."));
     setUsersList(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
     alert(newStatus === 'blocked' ? 'Kullanıcı başarıyla engellendi.' : 'Kullanıcının engeli kaldırıldı.');
   };
@@ -333,19 +336,19 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setIsEditing(true);
   };
 
-  const deleteProduct = async (id: string) => {
-    await deleteDoc(doc(db, 'products', id));
+  const deleteProduct = (id: string) => {
+    deleteDoc(doc(db, 'products', id)).catch(e => console.warn(e));
   };
 
-  const saveProduct = async () => {
+  const saveProduct = () => {
     const id = editingProduct.id || Math.random().toString(36).substr(2, 9);
     const newProd = { ...editingProduct, id } as Product;
-    await setDoc(doc(db, 'products', id), newProd);
+    setDoc(doc(db, 'products', id), newProd).catch(e => console.warn(e));
     setIsEditing(false);
     setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
   };
 
-  const saveSlide = async () => {
+  const saveSlide = () => {
     try {
       if (!editingSlide.title || !editingSlide.image) {
         alert("Başlık ve Görsel zorunludur!");
@@ -361,11 +364,9 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         image: editingSlide.image || ''
       } as Slide;
 
-      try {
-        await setDoc(doc(db, 'slides', id), newSlide);
-      } catch (e: any) {
+      setDoc(doc(db, 'slides', id), newSlide).catch(e => {
         console.warn("Firestore error, falling back to local state:", e.message);
-      }
+      });
 
       setSlides(prev => {
         const existing = prev.find(s => s.id === id);
@@ -381,12 +382,10 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     }
   };
 
-  const deleteSlide = async (id: string) => {
-    try {
-      await deleteDoc(doc(db, 'slides', id));
-    } catch (e: any) {
+  const deleteSlide = (id: string) => {
+    deleteDoc(doc(db, 'slides', id)).catch(e => {
       console.warn("Firestore delete failed, deleting locally:", e.message);
-    }
+    });
     setSlides(prev => prev.filter(slide => slide.id !== id));
   };
 
