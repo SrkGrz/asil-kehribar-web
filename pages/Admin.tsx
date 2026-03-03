@@ -162,17 +162,31 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
 
   const saveBlogPost = async () => {
     if (!editingBlogPost.title || !editingBlogPost.content) return;
-
-    let id = editingBlogPost.id;
-    if (!id) id = Date.now().toString();
-
-    const newPost = { ...editingBlogPost, id } as BlogPost;
-    await fetchApi('/api/blog', { method: 'POST', body: JSON.stringify(newPost) });
-    setIsEditingBlog(false);
+    try {
+      let id = editingBlogPost.id;
+      if (!id) id = Date.now().toString();
+      const newPost = { ...editingBlogPost, id } as BlogPost;
+      await fetchApi('/api/blog', { method: 'POST', body: JSON.stringify(newPost) });
+      setBlogPosts(prev => {
+        const exists = prev.find(p => p.id === id);
+        if (exists) return prev.map(p => p.id === id ? newPost : p);
+        return [...prev, newPost];
+      });
+      setIsEditingBlog(false);
+      setEditingBlogPost({ title: '', excerpt: '', content: '', image: '', date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) });
+    } catch (err: any) {
+      alert('Blog kaydedilemedi: ' + err.message);
+    }
   };
 
   const deleteBlogPost = async (id: string) => {
-    await fetchApi(`/api/blog/${id}`, { method: 'DELETE' });
+    if (!window.confirm('Bu blog yazısını silmek istediğinizden emin misiniz?')) return;
+    try {
+      await fetchApi(`/api/blog/${id}`, { method: 'DELETE' });
+      setBlogPosts(prev => prev.filter(p => p.id !== id));
+    } catch (err: any) {
+      alert('Blog silinemedi: ' + err.message);
+    }
   };
 
   const startEditBlog = (post: BlogPost) => {
@@ -303,16 +317,31 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setIsEditing(true);
   };
 
-  const deleteProduct = (id: string) => {
-    fetchApi(`/api/products/${id}`, { method: 'DELETE' }).catch(e => console.warn(e));
+  const deleteProduct = async (id: string) => {
+    if (!window.confirm('Bu ürünü silmek istediğinizden emin misiniz?')) return;
+    try {
+      await fetchApi(`/api/products/${id}`, { method: 'DELETE' });
+      setProducts(prev => prev.filter(p => p.id !== id));
+    } catch (err: any) {
+      alert('Ürün silinemedi: ' + err.message);
+    }
   };
 
-  const saveProduct = () => {
-    const id = editingProduct.id || Math.random().toString(36).substr(2, 9);
-    const newProd = { ...editingProduct, id } as Product;
-    fetchApi('/api/products', { method: 'POST', body: JSON.stringify(newProd) }).catch(e => console.warn(e));
-    setIsEditing(false);
-    setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
+  const saveProduct = async () => {
+    try {
+      const id = editingProduct.id || Math.random().toString(36).substr(2, 9);
+      const newProd = { ...editingProduct, id } as Product;
+      await fetchApi('/api/products', { method: 'POST', body: JSON.stringify(newProd) });
+      setProducts(prev => {
+        const exists = prev.find(p => p.id === id);
+        if (exists) return prev.map(p => p.id === id ? newProd : p);
+        return [...prev, newProd];
+      });
+      setIsEditing(false);
+      setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
+    } catch (err: any) {
+      alert('Ürün kaydedilemedi: ' + err.message);
+    }
   };
 
   const saveSlide = async () => {
