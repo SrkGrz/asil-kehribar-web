@@ -136,10 +136,10 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
         {/* Grid */}
         <div className="flex-1">
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {filteredProducts.map(product => (
                 <div key={product.id} className="group bg-white dark:bg-stone-950 border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                  <div className="relative aspect-[4/5] overflow-hidden">
+                  <div className="relative aspect-[3/4] overflow-hidden">
                     <Link to={`/product/${product.id}`} className="block size-full">
                       <img src={product.image || undefined} className="size-full object-cover transition-transform duration-700 group-hover:scale-110" alt={product.name} />
                     </Link>
@@ -158,9 +158,9 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                       <span className="absolute top-4 left-4 bg-stone-950 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded shadow-lg">Yeni</span>
                     )}
                   </div>
-                  <div className="p-6">
+                  <div className="p-4">
                     <Link to={`/product/${product.id}`}>
-                      <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors line-clamp-2 text-stone-950 dark:text-white">{product.name}</h3>
+                      <h3 className="font-bold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-2 text-stone-950 dark:text-white leading-tight">{product.name}</h3>
                     </Link>
                     {product.specs && <p className="text-xs text-stone-500 mb-6">{product.specs}</p>}
                     <div className="flex items-center justify-between">
@@ -168,13 +168,13 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                         {product.originalPrice && (
                           <span className="block text-xs text-stone-400 line-through">₺{product.originalPrice.toLocaleString('tr-TR')}</span>
                         )}
-                        <span className="text-2xl font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</span>
+                        <span className="text-lg font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</span>
                       </div>
                       <button
                         onClick={() => onAddToCart(product)}
-                        className="size-12 rounded-full bg-primary text-stone-950 flex items-center justify-center hover:scale-110 transition-transform active:scale-95 shadow-lg shadow-primary/30"
+                        className="size-9 rounded-full bg-primary text-stone-950 flex items-center justify-center hover:scale-110 transition-transform active:scale-95 shadow-lg shadow-primary/30"
                       >
-                        <span className="material-symbols-outlined">shopping_cart</span>
+                        <span className="material-symbols-outlined text-sm">shopping_cart</span>
                       </button>
                     </div>
                   </div>
