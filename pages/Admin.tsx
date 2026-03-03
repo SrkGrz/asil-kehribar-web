@@ -591,13 +591,31 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                         </div>
                         <div>
                           <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Tür</label>
-                          <select
-                            value={editingProduct.type}
-                            onChange={(e) => setEditingProduct({ ...editingProduct, type: e.target.value as AmberType })}
-                            className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-bold"
-                          >
-                            {Object.values(AmberType).map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
+                          <div className="space-y-3">
+                            <input
+                              type="text"
+                              list="amber-types"
+                              value={editingProduct.type}
+                              onChange={(e) => setEditingProduct({ ...editingProduct, type: e.target.value })}
+                              className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-bold"
+                              placeholder="Tür girin veya seçin..."
+                            />
+                            <datalist id="amber-types">
+                              {Object.values(AmberType).map(t => <option key={t} value={t} />)}
+                            </datalist>
+                            <div className="flex flex-wrap gap-2">
+                              {Object.values(AmberType).map(t => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  onClick={() => setEditingProduct({ ...editingProduct, type: t })}
+                                  className={`text-[9px] px-3 py-1.5 rounded-full font-black uppercase transition-all ${editingProduct.type === t ? 'bg-primary text-stone-950 shadow-md' : 'bg-zinc-100 dark:bg-stone-900 text-stone-500 hover:text-primary'}`}
+                                >
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       </div>
                       <div>

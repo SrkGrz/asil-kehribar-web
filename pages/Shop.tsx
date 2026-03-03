@@ -13,7 +13,7 @@ interface ShopProps {
 export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavorite, products }) => {
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
-  const [activeType, setActiveType] = useState<AmberType | 'Tümü'>('Tümü');
+  const [activeType, setActiveType] = useState<string>('Tümü');
   const [sortBy, setSortBy] = useState<string>('default');
   const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 100000 });
   const isFavorite = (id: string) => favorites.some(p => p.id === id);
@@ -81,7 +81,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
           <div>
             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary mb-6">Kehribar Türü</h3>
             <div className="space-y-3">
-              {['Tümü', ...Object.values(AmberType)].map(type => (
+              {['Tümü', ...Array.from(new Set(products.map(p => p.type)))].map(type => (
                 <label key={type} className="flex items-center gap-3 cursor-pointer group">
                   <input
                     type="radio"

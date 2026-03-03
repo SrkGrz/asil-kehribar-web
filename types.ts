@@ -9,7 +9,7 @@ export enum AmberType {
 export interface Product {
   id: string;
   name: string;
-  type: AmberType;
+  type: string;
   price: number;
   originalPrice?: number;
   image: string;
