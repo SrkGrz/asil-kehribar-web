@@ -23,21 +23,23 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
     <div className="space-y-0 pb-32">
 
       {/* ─── HERO ─── */}
-      <section className="relative h-[80vh] flex items-end overflow-hidden">
-        <img
-          src={heroImage}
-          className="absolute inset-0 size-full object-cover"
-          alt="Asil Kehribar - Hakkımızda"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
-        <div className="relative z-10 max-w-7xl mx-auto px-4 w-full pb-20">
-          <span className="text-primary font-black uppercase tracking-[0.5em] text-[10px] mb-6 block">
-            Koleksiyoncu Arşivi · Kuruluş 2009
-          </span>
-          <h1 className="text-5xl md:text-8xl lg:text-9xl font-display font-black text-white italic leading-none max-w-4xl tracking-tight">
-            Asil Bir <br />Tutkunun <br />
-            <span className="text-primary">Hikayesi.</span>
-          </h1>
+      <section className="px-4 md:px-8 mt-8">
+        <div className="relative h-[75vh] w-full max-w-[1400px] mx-auto flex items-end overflow-hidden bg-stone-50 border border-zinc-100 dark:border-zinc-800 shadow-sm">
+          <img
+            src={heroImage}
+            className="absolute inset-0 size-full object-cover"
+            alt="Asil Kehribar - Hakkımızda"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
+          <div className="relative z-10 max-w-7xl mx-auto px-4 w-full pb-20">
+            <span className="text-primary font-black uppercase tracking-[0.5em] text-[10px] mb-6 block">
+              Koleksiyoncu Arşivi · Kuruluş 2009
+            </span>
+            <h1 className="text-5xl md:text-8xl lg:text-9xl font-display font-black text-white italic leading-none max-w-4xl tracking-tight">
+              Asil Bir <br />Tutkunun <br />
+              <span className="text-primary">Hikayesi.</span>
+            </h1>
+          </div>
         </div>
       </section>
 
