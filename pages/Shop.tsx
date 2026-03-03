@@ -38,6 +38,15 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
+      {/* --- BREADCRUMB --- */}
+      <nav className="flex items-center flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest text-stone-400 mb-12 border-b border-zinc-100 dark:border-zinc-800 pb-6 overflow-hidden">
+        <Link to="/" className="hover:text-primary transition-colors">ANASAYFA</Link>
+        <span className="material-symbols-outlined text-[10px]">chevron_right</span>
+        <span>TESPİH</span>
+        <span className="material-symbols-outlined text-[10px]">chevron_right</span>
+        <span className="text-primary italic">KEHRİBAR TESPİHLER</span>
+      </nav>
+
       <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-display font-black italic mb-4 text-stone-950 dark:text-white">

@@ -35,6 +35,17 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
         Geri Dön
       </button>
 
+      {/* --- BREADCRUMB --- */}
+      <nav className="flex items-center flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest text-stone-400 mb-10 overflow-hidden">
+        <Link to="/" className="hover:text-primary transition-colors shrink-0">ANASAYFA</Link>
+        <span className="material-symbols-outlined text-[10px] shrink-0">chevron_right</span>
+        <span className="shrink-0">TESPİH</span>
+        <span className="material-symbols-outlined text-[10px] shrink-0">chevron_right</span>
+        <Link to="/shop" className="hover:text-primary transition-colors shrink-0">KEHRİBAR TESPİHLER</Link>
+        <span className="material-symbols-outlined text-[10px] shrink-0">chevron_right</span>
+        <span className="text-primary truncate">{product.name}</span>
+      </nav>
+
       <div className="grid lg:grid-cols-2 gap-16">
         {/* Left: Images */}
         <div className="space-y-6">
