@@ -44,20 +44,22 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
       </section>
 
       {/* ─── STATS ─── */}
-      <section className="bg-stone-950 py-12">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { value: years, label: 'Yıllık Tecrübe' },
-              { value: customers, label: 'Asil Koleksiyoncu' },
-              { value: '100%', label: 'Orijinal & Sertifikalı' },
-              { value: '7/24', label: 'Koleksiyoncu Desteği' },
-            ].map((s, i) => (
-              <div key={i}>
-                <p className="text-4xl md:text-5xl font-display font-black italic text-primary mb-2">{s.value}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{s.label}</p>
-              </div>
-            ))}
+      <section className="px-4 md:px-8">
+        <div className="w-full max-w-[1400px] mx-auto bg-stone-950 border border-zinc-800 border-t-0 py-10">
+          <div className="max-w-7xl mx-auto px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              {[
+                { value: years, label: 'Yıllık Tecrübe' },
+                { value: customers, label: 'Asil Koleksiyoncu' },
+                { value: '100%', label: 'Orijinal & Sertifikalı' },
+                { value: '7/24', label: 'Koleksiyoncu Desteği' },
+              ].map((s, i) => (
+                <div key={i}>
+                  <p className="text-4xl md:text-5xl font-display font-black italic text-primary mb-2">{s.value}</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{s.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </section>
