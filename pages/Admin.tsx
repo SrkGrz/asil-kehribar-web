@@ -110,13 +110,28 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     initSession();
   }, []);
 
-  // Password Change State
   const [passChange, setPassChange] = useState({
     current: '',
     new: '',
     confirm: ''
   });
   const [passSuccess, setPassSuccess] = useState('');
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
+
+  const handleSaveSettings = async () => {
+    setSettingsSaving(true);
+    setSettingsSaved(false);
+    try {
+      await fetchApi('/api/settings', { method: 'POST', body: JSON.stringify(settings) });
+      setSettingsSaved(true);
+      setTimeout(() => setSettingsSaved(false), 3000);
+    } catch (err: any) {
+      alert('Ayarlar kaydedilemedi: ' + err.message);
+    } finally {
+      setSettingsSaving(false);
+    }
+  };
 
   // Product Management States
   const [isEditing, setIsEditing] = useState(false);
@@ -1056,6 +1071,18 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 <h1 className="text-4xl font-display font-black italic mb-2">Genel Ayarlar</h1>
                 <p className="text-stone-500">Mağaza tercihlerini ve sistem yapılandırmasını yönetin.</p>
               </div>
+              <button
+                onClick={handleSaveSettings}
+                disabled={settingsSaving}
+                className="flex items-center gap-3 bg-primary text-stone-950 px-8 py-4 font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all disabled:opacity-50"
+              >
+                {settingsSaving ? (
+                  <div className="size-4 border-2 border-stone-950/30 border-t-stone-950 rounded-full animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-sm">save</span>
+                )}
+                {settingsSaved ? 'KAYDEDILDI ✓' : 'KAYDET'}
+              </button>
             </div>
 
             <div className="space-y-10">
