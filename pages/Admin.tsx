@@ -66,18 +66,24 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setNewUserError('');
     setNewUserSuccess('');
     try {
-      try {
-        await fetchApi('/api/auth/register', { method: 'POST', body: JSON.stringify({ email: newUserEmail, password: newUserPass, role: newUserRole }) });
-      } catch (dbErr: any) {
-        console.warn("API unavailable, handling locally:", dbErr.message);
-      }
-      const newMockUser = { id: Math.random().toString(), email: newUserEmail, role: newUserRole, status: 'active' };
-      setUsersList(prev => [newMockUser, ...prev]);
-      setNewUserSuccess('Kullanıcı başarıyla oluşturuldu! (Lokal / Demo Modu)');
+      const created = await fetchApi('/api/auth/register', { method: 'POST', body: JSON.stringify({ email: newUserEmail, password: newUserPass, role: newUserRole }) });
+      const newUser = { id: created.id, email: created.email, role: created.role, status: created.status || 'active' };
+      setUsersList(prev => [newUser, ...prev]);
+      setNewUserSuccess('Kullanıcı başarıyla oluşturuldu ve veritabanına kaydedildi.');
       setNewUserEmail('');
       setNewUserPass('');
     } catch (err: any) {
       setNewUserError('Kullanıcı oluşturulamadı: ' + err.message);
+    }
+  };
+
+  const handleDeleteUser = async (id: string) => {
+    if (!window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return;
+    try {
+      await fetchApi(`/api/users/${id}`, { method: 'DELETE' });
+      setUsersList(prev => prev.filter(u => u.id !== id));
+    } catch (err: any) {
+      alert('Kullanıcı silinemedi: ' + err.message);
     }
   };
 
@@ -1526,7 +1532,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 <input type="email" placeholder="Kullanıcı E-posta" value={newUserEmail} onChange={e => setNewUserEmail(e.target.value)} required className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
                 <input type="password" placeholder="Geçici Şifre (En az 6 karakter)" value={newUserPass} onChange={e => setNewUserPass(e.target.value)} required minLength={6} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold" />
                 <select value={newUserRole} onChange={e => setNewUserRole(e.target.value as any)} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold outline-none cursor-pointer">
-                  <option value="editor">İçerik Editörü (Sadece Blog / Ürün ekleyebilir)</option>
+                  <option value="editor">İçerik Editörü</option>
                   <option value="admin">Saray Nazırı (Tam Yetkili)</option>
                 </select>
                 {newUserError && <p className="text-red-500 text-xs font-bold">{newUserError}</p>}
@@ -1562,6 +1568,9 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                         <button onClick={() => handleToggleUserBlock(u.id, u.status || 'active')} className={`border px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${u.status === 'blocked' ? 'bg-green-50 text-green-600 border-green-200 hover:bg-green-100 dark:bg-green-500/10 dark:hover:bg-green-500/20' : 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100 dark:bg-red-500/10 dark:hover:bg-red-500/20'}`}>
                           <span className="material-symbols-outlined text-sm">{u.status === 'blocked' ? 'check_circle' : 'block'}</span>
                           {u.status === 'blocked' ? 'Engeli Kaldır' : 'Kullanıcıyı Engelle'}
+                        </button>
+                        <button onClick={() => handleDeleteUser(u.id)} className="border px-4 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 bg-red-50 text-red-600 border-red-200 hover:bg-red-500 hover:text-white hover:border-red-500 dark:bg-red-500/10 dark:hover:bg-red-500/30">
+                          <span className="material-symbols-outlined text-sm">delete</span> Sil
                         </button>
                       </div>
                     </li>

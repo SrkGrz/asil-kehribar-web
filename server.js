@@ -163,6 +163,14 @@ app.post('/api/users/:id/block', authMiddleware, async (req, res) => {
     res.json(user);
 });
 
+app.delete('/api/users/:id', authMiddleware, async (req, res) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Yetkisiz' });
+    try {
+        await User.findOneAndDelete({ id: req.params.id });
+        res.json({ success: true });
+    } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
 // --- DATA API ---
 const createCrudEndpoints = (model, baseRoute) => {
     app.get(baseRoute, async (req, res) => {
