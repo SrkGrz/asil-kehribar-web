@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
 import { fetchApi } from '../api';
-import { AmberType, Product, Slide, SiteSettings, BlogPost, Order } from '../types';
+import { Product, Slide, SiteSettings, BlogPost, Order } from '../types';
 type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
 
 const DEFAULT_PASSWORD = "admin";
@@ -331,7 +331,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         ...data,
         id: Math.random().toString(36).substr(2, 9),
         price: Number(data.price) || 0,
-        type: data.type || AmberType.ATES
+        type: data.type || ''
       });
     } catch (error: any) {
       console.error("İçe aktarma hatası:", error);
@@ -555,7 +555,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 <div className="bg-white dark:bg-stone-950 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                   <h3 className="text-xs font-black uppercase text-stone-400 mb-6 tracking-widest">Hızlı Erişim</h3>
                   <div className="grid grid-cols-2 gap-3">
-                    <button onClick={() => { setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' }); setIsEditing(true); setActiveView('products'); }} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
+                    <button onClick={() => { setEditingProduct({ name: '', price: 0, description: '', longDescription: '', specs: '', size: '', color: '', type: '', image: '' }); setIsEditing(true); setActiveView('products'); }} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
                       <span className="material-symbols-outlined text-amber-600">add_circle</span>
                       <span className="text-[10px] font-bold">Yeni Ürün</span>
                     </button>
@@ -629,20 +629,8 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                               placeholder="Tür girin veya seçin..."
                             />
                             <datalist id="amber-types">
-                              {Object.values(AmberType).map(t => <option key={t} value={t} />)}
+                              {Array.from(new Set(products.map(p => p.type))).map(t => <option key={t} value={t} />)}
                             </datalist>
-                            <div className="flex flex-wrap gap-2">
-                              {Object.values(AmberType).map(t => (
-                                <button
-                                  key={t}
-                                  type="button"
-                                  onClick={() => setEditingProduct({ ...editingProduct, type: t })}
-                                  className={`text-[9px] px-3 py-1.5 rounded-full font-black uppercase transition-all ${editingProduct.type === t ? 'bg-primary text-stone-950 shadow-md' : 'bg-zinc-100 dark:bg-stone-900 text-stone-500 hover:text-primary'}`}
-                                >
-                                  {t}
-                                </button>
-                              ))}
-                            </div>
                           </div>
                         </div>
                       </div>

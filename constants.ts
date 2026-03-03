@@ -1,24 +1,24 @@
 
-import { Product, AmberType, Slide, SiteSettings, BlogPost } from './types';
+import { Product, Slide, SiteSettings, BlogPost } from './types';
 
 export const DEFAULT_SLIDES: Slide[] = [
   {
     id: '1',
-    image: "https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&q=80&w=1920", // Working Amber-like dark image
+    image: "https://images.unsplash.com/photo-1616422285623-13ff0162193c?auto=format&fit=crop&q=80&w=1920",
     title: "Asaletin Kalbinde Amber",
     subtitle: "Doğanın milyonlarca yıllık hikayesini, en asil haliyle avuçlarınızda hissedin.",
     tag: "Nadir Parçalar • Asil Duruş"
   },
   {
     id: '2',
-    image: "https://images.unsplash.com/photo-1596942515093-662588147814?auto=format&fit=crop&q=80&w=1920", // Working Amber jewelry image
+    image: "https://images.unsplash.com/photo-1596942515093-662588147814?auto=format&fit=crop&q=80&w=1920",
     title: "Kadim Baltık Mirası",
     subtitle: "Kuzeyin soğuk sularından gelen sıcak parıltı. Gerçek Baltık damla kehribar koleksiyonu.",
     tag: "Baltık Koleksiyonu • Saf Enerji"
   },
   {
     id: '3',
-    image: "https://images.unsplash.com/photo-1588600129881-c7207aa22aa3?auto=format&fit=crop&q=80&w=1920", // Working yellow/amber texture image
+    image: "https://images.unsplash.com/photo-1588600129881-c7207aa22aa3?auto=format&fit=crop&q=80&w=1920",
     title: "Zanaatkarın İmzası",
     subtitle: "Her bir habbede usta ellerin titiz dokunuşu. Geleneksel sanatın modern yorumu.",
     tag: "Usta İşi • El Yapımı"
@@ -29,7 +29,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: '1',
     name: 'Özel Kesim Baltık Damla Kehribar Tesbih',
-    type: AmberType.DAMLA,
+    type: 'Damla (Baltık)',
     price: 4250,
     image: 'https://images.unsplash.com/photo-1615655406736-b37c4fabf923?q=80&w=2070&auto=format&fit=crop',
     specs: 'Gümüş Kamçı • 9x13mm Arpa Kesim',
@@ -42,7 +42,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: '2',
     name: 'Vişne Renk Ateş Kehribar Tesbih',
-    type: AmberType.ATES,
+    type: 'Ateş Kehribar',
     price: 1850,
     image: 'https://images.unsplash.com/photo-1605100804763-247f67b3557e?q=80&w=2040&auto=format&fit=crop',
     specs: 'Özel İşçilik • 10x14mm Kapsül Kesim',
@@ -55,7 +55,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: '3',
     name: 'Osmanlı Model Sıkma Kehribar',
-    type: AmberType.SIKMA,
+    type: 'Sıkma Kehribar',
     price: 2400,
     image: 'https://images.unsplash.com/photo-1596942515093-662588147814?q=80&w=1964&auto=format&fit=crop',
     specs: 'Habbe Boyu 8x12mm • Gümüş Kazaziye',
@@ -67,7 +67,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: '4',
     name: 'Şeffaf Gün Işığı Damla Kehribar',
-    type: AmberType.DAMLA,
+    type: 'Damla (Baltık)',
     price: 5200,
     originalPrice: 6500,
     image: 'https://images.unsplash.com/photo-1588600129881-c7207aa22aa3?q=80&w=2070&auto=format&fit=crop',
@@ -80,7 +80,7 @@ export const MOCK_PRODUCTS: Product[] = [
   {
     id: '5',
     name: 'Klasik Sıkma Kehribar',
-    type: AmberType.SIKMA,
+    type: 'Sıkma Kehribar',
     price: 1900,
     image: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=1974&auto=format&fit=crop',
     specs: 'Geleneksel İşçilik • 10x12mm Kapsül Kesim',

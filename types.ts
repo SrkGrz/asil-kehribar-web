@@ -1,11 +1,4 @@
 
-export enum AmberType {
-  DAMLA = 'Damla (Baltık)',
-  SIKMA = 'Sıkma Kehribar',
-  ATES = 'Ateş Kehribar',
-  OSMANLI = 'Osmanlı Tarzı',
-}
-
 export interface Product {
   id: string;
   name: string;

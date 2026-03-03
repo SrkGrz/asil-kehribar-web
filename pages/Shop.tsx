@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Product, AmberType } from '../types';
+import { Product } from '../types';
 
 interface ShopProps {
   onAddToCart: (product: Product) => void;
