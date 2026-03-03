@@ -4,7 +4,7 @@ import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
 import { fetchApi } from '../api';
 import { AmberType, Product, Slide, SiteSettings, BlogPost } from '../types';
-type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users';
+type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
 
 const DEFAULT_PASSWORD = "admin";
 
@@ -1063,7 +1063,139 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
           </div>
         );
 
+      case 'about':
+        return (
+          <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
+            <div className="flex justify-between items-end mb-12">
+              <div>
+                <h1 className="text-4xl font-display font-black italic mb-2">Hakkımızda Sayfası</h1>
+                <p className="text-stone-500">Hakkımızda sayfasındaki metin ve görselleri düzenleyin.</p>
+              </div>
+              <button
+                onClick={handleSaveSettings}
+                disabled={settingsSaving}
+                className="flex items-center gap-3 bg-primary text-stone-950 px-8 py-4 font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all disabled:opacity-50"
+              >
+                {settingsSaving ? (
+                  <div className="size-4 border-2 border-stone-950/30 border-t-stone-950 rounded-full animate-spin" />
+                ) : (
+                  <span className="material-symbols-outlined text-sm">save</span>
+                )}
+                {settingsSaved ? 'KAYDEDİLDİ ✓' : 'KAYDET'}
+              </button>
+            </div>
+
+            <div className="space-y-10">
+              <section className="bg-white dark:bg-stone-950 p-10 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <h2 className="text-xl font-black italic mb-10 flex items-center gap-4">
+                  <span className="material-symbols-outlined text-primary">edit_note</span>
+                  İçerik & Metinler
+                </h2>
+                <div className="grid md:grid-cols-2 gap-10">
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Başlık</label>
+                    <input
+                      type="text"
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
+                      value={settings.aboutTitle}
+                      onChange={(e) => setSettings({ ...settings, aboutTitle: e.target.value })}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Paragraf 1</label>
+                    <textarea
+                      rows={4}
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-medium"
+                      value={settings.aboutText1}
+                      onChange={(e) => setSettings({ ...settings, aboutText1: e.target.value })}
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Paragraf 2</label>
+                    <textarea
+                      rows={4}
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-medium"
+                      value={settings.aboutText2}
+                      onChange={(e) => setSettings({ ...settings, aboutText2: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Tecrübe (Yıl)</label>
+                    <input
+                      type="text"
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
+                      value={settings.aboutYears}
+                      onChange={(e) => setSettings({ ...settings, aboutYears: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Koleksiyoncu Sayısı</label>
+                    <input
+                      type="text"
+                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
+                      value={settings.aboutCustomers}
+                      onChange={(e) => setSettings({ ...settings, aboutCustomers: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="bg-white dark:bg-stone-950 p-10 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                <h2 className="text-xl font-black italic mb-10 flex items-center gap-4">
+                  <span className="material-symbols-outlined text-primary">image</span>
+                  Görseller
+                </h2>
+                <div className="grid md:grid-cols-2 gap-10">
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Hero Görseli (En Üst)</label>
+                    {settings.aboutHeroImage && (
+                      <img src={settings.aboutHeroImage} className="w-full h-40 object-cover mb-4 border border-zinc-200 dark:border-zinc-700" alt="Hero önizleme" />
+                    )}
+                    <div className="flex flex-col gap-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(e, (base64) => setSettings({ ...settings, aboutHeroImage: base64 }))}
+                        className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold text-xs"
+                        placeholder="Veya URL girin..."
+                        value={settings.aboutHeroImage}
+                        onChange={(e) => setSettings({ ...settings, aboutHeroImage: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">İçerik Görseli (Hikayemiz)</label>
+                    {settings.aboutContentImage && (
+                      <img src={settings.aboutContentImage} className="w-full h-40 object-cover mb-4 border border-zinc-200 dark:border-zinc-700" alt="İçerik önizleme" />
+                    )}
+                    <div className="flex flex-col gap-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileChange(e, (base64) => setSettings({ ...settings, aboutContentImage: base64 }))}
+                        className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold text-xs"
+                        placeholder="Veya URL girin..."
+                        value={settings.aboutContentImage}
+                        onChange={(e) => setSettings({ ...settings, aboutContentImage: e.target.value })}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        );
+
       case 'settings':
+
         return (
           <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
             <div className="flex justify-between items-end mb-12">
@@ -1127,97 +1259,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       value={settings.instagram}
                       onChange={(e) => setSettings({ ...settings, instagram: e.target.value })}
                     />
-                  </div>
-                </div>
-              </section>
-
-              {/* About Page Settings Section */}
-              <section className="bg-white dark:bg-stone-950 p-10 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h2 className="text-xl font-black italic mb-10 flex items-center gap-4">
-                  <span className="material-symbols-outlined text-primary">info</span>
-                  Hakkımızda Sayfası
-                </h2>
-                <div className="grid md:grid-cols-2 gap-10">
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Başlık</label>
-                    <input
-                      type="text"
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
-                      value={settings.aboutTitle}
-                      onChange={(e) => setSettings({ ...settings, aboutTitle: e.target.value })}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Paragraf 1</label>
-                    <textarea
-                      rows={3}
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-medium"
-                      value={settings.aboutText1}
-                      onChange={(e) => setSettings({ ...settings, aboutText1: e.target.value })}
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Paragraf 2</label>
-                    <textarea
-                      rows={3}
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-medium"
-                      value={settings.aboutText2}
-                      onChange={(e) => setSettings({ ...settings, aboutText2: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Tecrübe (Yıl)</label>
-                    <input
-                      type="text"
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
-                      value={settings.aboutYears}
-                      onChange={(e) => setSettings({ ...settings, aboutYears: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Koleksiyoncu Sayısı</label>
-                    <input
-                      type="text"
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
-                      value={settings.aboutCustomers}
-                      onChange={(e) => setSettings({ ...settings, aboutCustomers: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Hero Görseli (En Üst)</label>
-                    <div className="flex flex-col gap-4">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, (base64) => setSettings({ ...settings, aboutHeroImage: base64 }))}
-                        className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold text-xs"
-                        placeholder="Veya URL girin..."
-                        value={settings.aboutHeroImage}
-                        onChange={(e) => setSettings({ ...settings, aboutHeroImage: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">İçerik Görseli (Alt)</label>
-                    <div className="flex flex-col gap-4">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, (base64) => setSettings({ ...settings, aboutContentImage: base64 }))}
-                        className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold text-xs"
-                        placeholder="Veya URL girin..."
-                        value={settings.aboutContentImage}
-                        onChange={(e) => setSettings({ ...settings, aboutContentImage: e.target.value })}
-                      />
-                    </div>
                   </div>
                 </div>
               </section>
@@ -1669,6 +1710,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
             { id: 'blog', icon: 'article', label: 'Blog' },
             { id: 'integrations', icon: 'hub', label: 'Entegrasyonlar' },
             { id: 'orders', icon: 'shopping_cart', label: 'Siparişler' },
+            { id: 'about', icon: 'info', label: 'Hakkımızda' },
             { id: 'customers', icon: 'group', label: 'Koleksiyoncular' },
             { id: 'settings', icon: 'settings', label: 'Ayarlar' },
             ...(userRole === 'admin' ? [{ id: 'users', icon: 'manage_accounts', label: 'Kullanıcılar' }] : [])
