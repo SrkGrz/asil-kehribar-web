@@ -1595,9 +1595,9 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
   };
 
   return (
-    <div className="flex flex-col xl:flex-row min-h-[calc(100vh-80px)] overflow-hidden bg-zinc-50 dark:bg-stone-950">
+    <div className="flex flex-col xl:flex-row min-h-[calc(100vh-80px)] bg-zinc-50 dark:bg-stone-950">
       {/* Mini Sidebar */}
-      <aside className="w-full xl:w-72 bg-white dark:bg-stone-950 border-b xl:border-b-0 xl:border-r border-zinc-200 dark:border-zinc-800 flex flex-row xl:flex-col p-4 xl:p-6 gap-2 overflow-x-auto custom-scrollbar shrink-0">
+      <aside className="w-full xl:w-72 xl:h-[calc(100vh-80px)] xl:sticky xl:top-0 bg-white dark:bg-stone-950 border-b xl:border-b-0 xl:border-r border-zinc-200 dark:border-zinc-800 flex flex-row xl:flex-col p-4 xl:p-6 gap-2 overflow-x-auto xl:overflow-y-auto custom-scrollbar shrink-0">
         <div className="hidden xl:block mb-10 px-4">
           <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-stone-400">Yönetim Paneli</h3>
           <p className="text-[9px] font-bold text-primary mt-1">Sürüm 2.0.0-Royal</p>
