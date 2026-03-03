@@ -46,9 +46,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
         <span className="text-primary truncate">{product.name}</span>
       </nav>
 
-      <div className="grid lg:grid-cols-2 gap-16">
+      <div className="grid lg:grid-cols-12 gap-12 lg:gap-16">
         {/* Left: Images */}
-        <div className="space-y-6">
+        <div className="lg:col-span-5 space-y-6">
           <div className="aspect-[4/5] overflow-hidden bg-zinc-100 dark:bg-stone-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl relative">
             <img src={product.image || undefined} className="size-full object-cover" alt={product.name} />
             <button
@@ -63,7 +63,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
         </div>
 
         {/* Right: Info */}
-        <div className="flex flex-col">
+        <div className="lg:col-span-7 flex flex-col">
           <div className="mb-8">
             <span className="inline-block text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-3">{product.type}</span>
             <h1 className="text-4xl md:text-5xl font-display font-black italic mb-4 text-stone-950 dark:text-white">{product.name}</h1>
