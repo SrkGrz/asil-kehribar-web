@@ -162,7 +162,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                     <Link to={`/product/${product.id}`}>
                       <h3 className="font-bold text-lg mb-1 group-hover:text-primary transition-colors line-clamp-2 text-stone-950 dark:text-white">{product.name}</h3>
                     </Link>
-                    <p className="text-xs text-stone-500 mb-6">{product.specs}</p>
+                    {product.specs && <p className="text-xs text-stone-500 mb-6">{product.specs}</p>}
                     <div className="flex items-center justify-between">
                       <div>
                         {product.originalPrice && (

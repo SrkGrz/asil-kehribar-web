@@ -139,8 +139,11 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     name: '',
     price: 0,
     description: '',
+    longDescription: '',
     specs: '',
-    type: AmberType.ATES,
+    size: '',
+    color: '',
+    type: 'Diğer',
     image: ''
   });
 
@@ -362,7 +365,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         return [...prev, newProd];
       });
       setIsEditing(false);
-      setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
+      setEditingProduct({ name: '', price: 0, description: '', longDescription: '', specs: '', size: '', color: '', type: 'Diğer', image: '' });
     } catch (err: any) {
       alert('Ürün kaydedilemedi: ' + err.message);
     }
@@ -618,21 +621,41 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                           </div>
                         </div>
                       </div>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Ölçü (Örn: 9x12mm)</label>
+                          <input
+                            type="text"
+                            value={editingProduct.size}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, size: e.target.value })}
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Özellikler (Örn: Gümüş Kamçı)</label>
+                          <input
+                            type="text"
+                            value={editingProduct.specs}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, specs: e.target.value })}
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-bold"
+                          />
+                        </div>
+                      </div>
                       <div>
-                        <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Özellikler (Örn: 9x12mm • Gümüş)</label>
-                        <input
-                          type="text"
-                          value={editingProduct.specs}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, specs: e.target.value })}
-                          className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-bold"
+                        <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Açıklama (Kısa Özet)</label>
+                        <textarea
+                          rows={2}
+                          value={editingProduct.description}
+                          onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                          className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-medium"
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Açıklama</label>
+                        <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Detaylı Açıklama (Sayfanın altındaki geniş metin)</label>
                         <textarea
-                          rows={4}
-                          value={editingProduct.description}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                          rows={6}
+                          value={editingProduct.longDescription}
+                          onChange={(e) => setEditingProduct({ ...editingProduct, longDescription: e.target.value })}
                           className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-medium"
                         />
                       </div>
@@ -703,7 +726,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
               </div>
               <button
                 onClick={() => {
-                  setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
+                  setEditingProduct({ name: '', price: 0, description: '', longDescription: '', specs: '', size: '', color: '', type: 'Diğer', image: '' });
                   setIsEditing(true);
                 }}
                 className="bg-primary text-stone-950 px-8 py-4 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-primary/20"
@@ -882,7 +905,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                           className="bg-transparent border-0 p-0 w-32 focus:ring-0"
                         />
                       </div>
-                      <p className="text-sm text-stone-500">{importedProduct.specs}</p>
+                      {importedProduct.specs && <p className="text-sm text-stone-500">{importedProduct.specs}</p>}
                       <textarea
                         value={importedProduct.description || ''}
                         onChange={(e) => setImportedProduct({ ...importedProduct, description: e.target.value })}

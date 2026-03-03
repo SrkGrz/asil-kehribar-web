@@ -76,22 +76,28 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
           </div>
 
           <div className="space-y-8 mb-12 flex-1">
-            <div>
-              <h3 className="text-xs font-black uppercase tracking-widest text-stone-400 mb-4">Ürün Açıklaması</h3>
-              <p className="text-lg text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
-                {product.longDescription}
-              </p>
-            </div>
+            {product.longDescription && (
+              <div>
+                <h3 className="text-xs font-black uppercase tracking-widest text-stone-400 mb-4">Ürün Açıklaması</h3>
+                <p className="text-lg text-stone-600 dark:text-stone-300 leading-relaxed font-medium">
+                  {product.longDescription}
+                </p>
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 bg-zinc-50 dark:bg-stone-950 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <p className="text-[10px] font-black uppercase text-stone-400 mb-1">Ölçü</p>
-                <p className="font-bold">{product.size}</p>
-              </div>
-              <div className="p-4 bg-zinc-50 dark:bg-stone-950 rounded-xl border border-zinc-200 dark:border-zinc-800">
-                <p className="text-[10px] font-black uppercase text-stone-400 mb-1">Özellik</p>
-                <p className="font-bold">{product.specs.split('•')[0].trim()}</p>
-              </div>
+              {product.size && (
+                <div className="p-4 bg-zinc-50 dark:bg-stone-950 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                  <p className="text-[10px] font-black uppercase text-stone-400 mb-1">Ölçü</p>
+                  <p className="font-bold">{product.size}</p>
+                </div>
+              )}
+              {product.specs && (
+                <div className="p-4 bg-zinc-50 dark:bg-stone-950 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                  <p className="text-[10px] font-black uppercase text-stone-400 mb-1">Özellik</p>
+                  <p className="font-bold">{product.specs.split('•')[0].trim()}</p>
+                </div>
+              )}
             </div>
           </div>
 
