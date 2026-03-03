@@ -315,7 +315,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' });
   };
 
-  const saveSlide = () => {
+  const saveSlide = async () => {
     try {
       if (!editingSlide.title || !editingSlide.image) {
         alert("Başlık ve Görsel zorunludur!");
@@ -331,9 +331,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         image: editingSlide.image || ''
       } as Slide;
 
-      fetchApi('/api/slides', { method: 'POST', body: JSON.stringify(newSlide) }).catch(e => {
-        console.warn("API error:", e.message);
-      });
+      await fetchApi('/api/slides', { method: 'POST', body: JSON.stringify(newSlide) });
 
       setSlides(prev => {
         const existing = prev.find(s => s.id === id);
@@ -344,16 +342,20 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
       setIsEditingSlide(false);
       setEditingSlide({ title: '', subtitle: '', tag: '', image: '' });
     } catch (e: any) {
-      console.error("Görsel kaydedilemedi", e);
-      alert("Görsel kaydedilirken hata oluştu: " + e.message);
+      console.error("Slayt kaydedilemedi", e);
+      alert("Slayt kaydedilirken hata oluştu: " + e.message);
     }
   };
 
-  const deleteSlide = (id: string) => {
-    fetchApi(`/api/slides/${id}`, { method: 'DELETE' }).catch(e => {
-      console.warn("API error:", e.message);
-    });
-    setSlides(prev => prev.filter(slide => slide.id !== id));
+  const deleteSlide = async (id: string) => {
+    if (!window.confirm('Bu slaytı silmek istediğinizden emin misiniz?')) return;
+    try {
+      await fetchApi(`/api/slides/${id}`, { method: 'DELETE' });
+      setSlides(prev => prev.filter(slide => slide.id !== id));
+    } catch (e: any) {
+      console.error("Slayt silinemedi", e);
+      alert("Slayt silinirken hata oluştu: " + e.message);
+    }
   };
 
   if (!isAdminAuthenticated) {
