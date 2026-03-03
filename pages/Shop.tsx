@@ -15,7 +15,6 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
   const searchQuery = searchParams.get('q') || '';
   const [activeType, setActiveType] = useState<string>('Tümü');
   const [sortBy, setSortBy] = useState<string>('default');
-  const [priceRange, setPriceRange] = useState<{ min: number; max: number }>({ min: 0, max: 100000 });
   const isFavorite = (id: string) => favorites.some(p => p.id === id);
 
   const filteredProducts = products
@@ -25,8 +24,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.specs.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesPrice = p.price >= priceRange.min && p.price <= priceRange.max;
-      return matchesType && matchesSearch && matchesPrice;
+      return matchesType && matchesSearch;
     })
     .sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price;
@@ -98,39 +96,6 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
             </div>
           </div>
 
-          <div>
-            <h3 className="text-xs font-black uppercase tracking-[0.3em] text-primary mb-6">Fiyat Aralığı</h3>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[9px] font-black uppercase text-stone-400 mb-1 block">Min (₺)</label>
-                  <input
-                    type="number"
-                    value={priceRange.min}
-                    onChange={(e) => setPriceRange({ ...priceRange, min: Number(e.target.value) })}
-                    className="w-full bg-zinc-100 dark:bg-stone-950 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-                <div>
-                  <label className="text-[9px] font-black uppercase text-stone-400 mb-1 block">Max (₺)</label>
-                  <input
-                    type="number"
-                    value={priceRange.max}
-                    onChange={(e) => setPriceRange({ ...priceRange, max: Number(e.target.value) })}
-                    className="w-full bg-zinc-100 dark:bg-stone-950 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPriceRange({ min: 0, max: 100000 })}
-                  className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline"
-                >
-                  Sıfırla
-                </button>
-              </div>
-            </div>
-          </div>
         </aside>
 
         {/* Grid */}
@@ -139,7 +104,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {filteredProducts.map(product => (
                 <div key={product.id} className="group bg-white dark:bg-stone-950 border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-                  <div className="relative aspect-[3/4] overflow-hidden">
+                  <div className="relative aspect-[4/5] overflow-hidden">
                     <Link to={`/product/${product.id}`} className="block size-full">
                       <img src={product.image || undefined} className="size-full object-cover transition-transform duration-700 group-hover:scale-110" alt={product.name} />
                     </Link>
