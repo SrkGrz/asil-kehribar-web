@@ -88,7 +88,7 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
           </div>
 
           <div className="relative group">
-            <div className="aspect-[4/5] overflow-hidden shadow-2xl border border-zinc-200 dark:border-zinc-800">
+            <div className="h-[75vh] overflow-hidden shadow-2xl border border-zinc-200 dark:border-zinc-800">
               <img
                 src={contentImage}
                 referrerPolicy="no-referrer"
