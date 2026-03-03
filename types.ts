@@ -46,15 +46,8 @@ export interface SiteSettings {
   aboutText2: string;
   aboutYears: string;
   aboutCustomers: string;
-  craftsmanImage: string;
-  craftsmanTitle: string;
-  craftsmanText1: string;
-  craftsmanText2: string;
-  craftsmanFeature1Title: string; craftsmanFeature1Desc: string;
-  craftsmanFeature2Title: string; craftsmanFeature2Desc: string;
-  craftsmanFeature3Title: string; craftsmanFeature3Desc: string;
-  craftsmanFeature4Title: string; craftsmanFeature4Desc: string;
 }
+
 
 export interface BlogPost {
   id: string;

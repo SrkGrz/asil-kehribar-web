@@ -1190,57 +1190,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                   </div>
                 </div>
               </section>
-
-              <section className="bg-white dark:bg-stone-950 p-10 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h2 className="text-xl font-black italic mb-10 flex items-center gap-4">
-                  <span className="material-symbols-outlined text-primary">handyman</span>
-                  Zanaatkarlarımız Bölümü
-                </h2>
-                <div className="grid md:grid-cols-2 gap-10">
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Başlık</label>
-                    <input type="text" className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
-                      value={settings.craftsmanTitle || ''} onChange={(e) => setSettings({ ...settings, craftsmanTitle: e.target.value })} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Paragraf 1</label>
-                    <textarea rows={3} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-medium"
-                      value={settings.craftsmanText1 || ''} onChange={(e) => setSettings({ ...settings, craftsmanText1: e.target.value })} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Paragraf 2</label>
-                    <textarea rows={3} className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-medium"
-                      value={settings.craftsmanText2 || ''} onChange={(e) => setSettings({ ...settings, craftsmanText2: e.target.value })} />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Görsel</label>
-                    {settings.craftsmanImage && (
-                      <img src={settings.craftsmanImage} className="w-full h-40 object-cover mb-4 border border-zinc-200 dark:border-zinc-700" alt="Zanaat önizleme" />
-                    )}
-                    <div className="flex flex-col gap-3">
-                      <input type="file" accept="image/*"
-                        onChange={(e) => handleFileChange(e, (base64) => setSettings({ ...settings, craftsmanImage: base64 }))}
-                        className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer" />
-                      <input type="text" className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold text-xs" placeholder="Veya URL girin..."
-                        value={settings.craftsmanImage || ''} onChange={(e) => setSettings({ ...settings, craftsmanImage: e.target.value })} />
-                    </div>
-                  </div>
-                  {[
-                    { tKey: 'craftsmanFeature1Title', dKey: 'craftsmanFeature1Desc', label: 'Özellik 1' },
-                    { tKey: 'craftsmanFeature2Title', dKey: 'craftsmanFeature2Desc', label: 'Özellik 2' },
-                    { tKey: 'craftsmanFeature3Title', dKey: 'craftsmanFeature3Desc', label: 'Özellik 3' },
-                    { tKey: 'craftsmanFeature4Title', dKey: 'craftsmanFeature4Desc', label: 'Özellik 4' },
-                  ].map((f) => (
-                    <div key={f.label} className="space-y-3 p-5 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{f.label}</p>
-                      <input type="text" placeholder="Başlık" className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 font-bold text-sm"
-                        value={(settings as any)[f.tKey] || ''} onChange={(e) => setSettings({ ...settings, [f.tKey]: e.target.value })} />
-                      <input type="text" placeholder="Açıklama" className="w-full bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl p-3 text-sm"
-                        value={(settings as any)[f.dKey] || ''} onChange={(e) => setSettings({ ...settings, [f.dKey]: e.target.value })} />
-                    </div>
-                  ))}
-                </div>
-              </section>
             </div>
           </div>
         );

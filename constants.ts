@@ -102,15 +102,7 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   aboutText1: 'Asil Kehribar, sadece bir tesbih mağazası değil; milyonlarca yıllık doğal sürecin, insan zekası ve emeğiyle buluştuğu bir sanat durağıdır. Biz, Baltık ormanlarının gözyaşları olarak anılan kehribarı, en saf ve asil haliyle bulup sizlere sunmak için yola çıktık.',
   aboutText2: 'Temel amacımız, tesbih kültürünü sadece bir aksesuar olmaktan çıkarıp, kuşaktan kuşağa aktarılacak, yatırım değeri taşıyan asil bir miras haline getirmektir. Her bir eserimiz, usta sanatçılarımızın torna tezgahlarında binlerce kez dokunularak şekil alır.',
   aboutYears: '25+',
-  aboutCustomers: '12.000+',
-  craftsmanImage: 'https://images.unsplash.com/photo-1607503873903-c5e95f80d7b9?w=900&q=80',
-  craftsmanTitle: 'Ustanın Elinden Asil Sahibe.',
-  craftsmanText1: 'Her tane, usta tornacıların onlarca yıllık birikiminin ürünüdür. Hammadden itibaren elle seçilen, analiz edilen ve işlenen kehribarlarımız, geleneksel yöntemlerle şekillendirilir.',
-  craftsmanText2: 'Osmanlı geleneğinden beslenip modern estetiğe kavuşan her eser, ellerimizden kalplerinize uzanan bir sanat yolculuğunun ürünüdür.',
-  craftsmanFeature1Title: 'El İşçiliği', craftsmanFeature1Desc: 'Her tane usta ellerde şekillenir',
-  craftsmanFeature2Title: 'Lab Analizi', craftsmanFeature2Desc: 'Spektroskopi ile doğrulanmış',
-  craftsmanFeature3Title: 'Osmanlı Mirası', craftsmanFeature3Desc: 'Asırlık gelenek, modern estetik',
-  craftsmanFeature4Title: 'Güvenli Teslimat', craftsmanFeature4Desc: 'Özel muhafaza kutusunda',
+  aboutCustomers: '12.000+'
 };
 
 export const DEFAULT_BLOG_POSTS: BlogPost[] = [
