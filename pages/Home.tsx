@@ -98,6 +98,24 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
               ))}
             </div>
           </div>
+
+          {/* Navigation Arrows */}
+          <div className="absolute inset-0 flex items-center justify-between p-4 md:p-8 z-20 pointer-events-none">
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
+              className="pointer-events-auto size-12 md:size-16 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 text-stone-900 flex items-center justify-center hover:bg-primary hover:text-stone-950 hover:scale-110 transition-all group"
+              aria-label="Önceki Slayt"
+            >
+              <span className="material-symbols-outlined text-3xl group-active:scale-90 transition-transform">chevron_left</span>
+            </button>
+            <button
+              onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
+              className="pointer-events-auto size-12 md:size-16 rounded-2xl bg-white/20 backdrop-blur-md border border-white/30 text-stone-900 flex items-center justify-center hover:bg-primary hover:text-stone-950 hover:scale-110 transition-all group"
+              aria-label="Sonraki Slayt"
+            >
+              <span className="material-symbols-outlined text-3xl group-active:scale-90 transition-transform">chevron_right</span>
+            </button>
+          </div>
         </div>
       </section>
 
