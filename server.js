@@ -212,6 +212,13 @@ app.post('/api/settings', authMiddleware, async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 Asil Kehribar MongoDB Atlas API Sunucusu ${PORT} portunda çalışıyor.`);
-});
+
+// Local'de doğrudan çalıştırıldığında sunucuyu başlat
+// Vercel'de ise export default app kullanılır
+if (process.env.NODE_ENV !== 'production' || process.env.VERCEL === undefined) {
+    app.listen(PORT, () => {
+        console.log(`🚀 Asil Kehribar MongoDB Atlas API Sunucusu ${PORT} portunda çalışıyor.`);
+    });
+}
+
+export default app;
