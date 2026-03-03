@@ -21,8 +21,8 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
   const filteredProducts = products
     .filter(p => {
       const matchesType = activeType === 'Tümü' || p.type === activeType;
-      const matchesSearch = !searchQuery || 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      const matchesSearch = !searchQuery ||
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.specs.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesPrice = p.price >= priceRange.min && p.price <= priceRange.max;
@@ -44,15 +44,15 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
             {searchQuery ? `"${searchQuery}" için Sonuçlar` : 'Tüm Ürünler'}
           </h1>
           <p className="text-stone-500 max-w-2xl">
-            {searchQuery 
-              ? `${filteredProducts.length} ürün bulundu.` 
+            {searchQuery
+              ? `${filteredProducts.length} ürün bulundu.`
               : 'Damla, sıkma, ateş ve Osmanlı tarzı en özel kehribar tesbih modelleriyle ustalığın hikayesini keşfedin.'}
           </p>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <span className="text-[10px] font-black uppercase tracking-widest text-stone-400">Sıralama:</span>
-          <select 
+          <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             className="bg-zinc-100 dark:bg-stone-950 border-none rounded-xl py-2 pl-4 pr-10 text-xs font-bold focus:ring-1 focus:ring-primary cursor-pointer"
@@ -74,12 +74,12 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
             <div className="space-y-3">
               {['Tümü', ...Object.values(AmberType)].map(type => (
                 <label key={type} className="flex items-center gap-3 cursor-pointer group">
-                  <input 
-                    type="radio" 
-                    name="type" 
+                  <input
+                    type="radio"
+                    name="type"
                     checked={activeType === type}
                     onChange={() => setActiveType(type as any)}
-                    className="size-4 text-primary border-zinc-300 dark:border-zinc-700 focus:ring-primary dark:bg-zinc-800" 
+                    className="size-4 text-primary border-zinc-300 dark:border-zinc-700 focus:ring-primary dark:bg-zinc-800"
                   />
                   <span className={`text-sm font-medium transition-colors ${activeType === type ? 'text-primary' : 'text-stone-600 dark:text-stone-400 group-hover:text-primary'}`}>
                     {type}
@@ -95,8 +95,8 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-[9px] font-black uppercase text-stone-400 mb-1 block">Min (₺)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={priceRange.min}
                     onChange={(e) => setPriceRange({ ...priceRange, min: Number(e.target.value) })}
                     className="w-full bg-zinc-100 dark:bg-stone-950 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary"
@@ -104,8 +104,8 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                 </div>
                 <div>
                   <label className="text-[9px] font-black uppercase text-stone-400 mb-1 block">Max (₺)</label>
-                  <input 
-                    type="number" 
+                  <input
+                    type="number"
                     value={priceRange.max}
                     onChange={(e) => setPriceRange({ ...priceRange, max: Number(e.target.value) })}
                     className="w-full bg-zinc-100 dark:bg-stone-950 border-none rounded-lg py-2 px-3 text-xs font-bold focus:ring-1 focus:ring-primary"
@@ -113,7 +113,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                 </div>
               </div>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => setPriceRange({ min: 0, max: 100000 })}
                   className="text-[9px] font-black uppercase tracking-widest text-primary hover:underline"
                 >
@@ -129,12 +129,12 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
               {filteredProducts.map(product => (
-                <div key={product.id} className="group bg-white dark:bg-stone-950 rounded-2xl border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
+                <div key={product.id} className="group bg-white dark:bg-stone-950 border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
                   <div className="relative aspect-[4/5] overflow-hidden">
                     <Link to={`/product/${product.id}`} className="block size-full">
                       <img src={product.image || undefined} className="size-full object-cover transition-transform duration-700 group-hover:scale-110" alt={product.name} />
                     </Link>
-                    <button 
+                    <button
                       onClick={() => onToggleFavorite(product)}
                       className={`absolute top-4 right-4 z-10 size-10 rounded-full flex items-center justify-center transition-all ${isFavorite(product.id) ? 'bg-primary text-stone-950 shadow-lg' : 'bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md text-stone-950 dark:text-white hover:bg-primary hover:text-stone-950'}`}
                     >
@@ -161,7 +161,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                         )}
                         <span className="text-2xl font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</span>
                       </div>
-                      <button 
+                      <button
                         onClick={() => onAddToCart(product)}
                         className="size-12 rounded-full bg-primary text-stone-950 flex items-center justify-center hover:scale-110 transition-transform active:scale-95 shadow-lg shadow-primary/30"
                       >
@@ -177,7 +177,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
               <span className="material-symbols-outlined text-6xl text-zinc-300 dark:text-zinc-700 mb-4">search_off</span>
               <h3 className="text-xl font-bold mb-2">Sonuç Bulunamadı</h3>
               <p className="text-stone-500">Aradığınız kriterlere uygun ürün bulunmamaktadır.</p>
-              <button 
+              <button
                 onClick={() => {
                   setActiveType('Tümü');
                   // Clear search query by navigating back to /shop

@@ -27,7 +27,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
-      <button 
+      <button
         onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-stone-500 hover:text-primary mb-8 font-bold text-xs uppercase tracking-widest transition-colors"
       >
@@ -38,9 +38,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
       <div className="grid lg:grid-cols-2 gap-16">
         {/* Left: Images */}
         <div className="space-y-6">
-          <div className="aspect-[4/5] rounded-3xl overflow-hidden bg-zinc-100 dark:bg-stone-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl relative">
+          <div className="aspect-[4/5] overflow-hidden bg-zinc-100 dark:bg-stone-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl relative">
             <img src={product.image || undefined} className="size-full object-cover" alt={product.name} />
-            <button 
+            <button
               onClick={() => onToggleFavorite(product)}
               className={`absolute top-6 right-6 size-14 rounded-full flex items-center justify-center shadow-2xl transition-all ${isFavorite ? 'bg-primary text-stone-950' : 'bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md text-stone-950 dark:text-white'}`}
             >
@@ -85,7 +85,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
           </div>
 
           <div className="flex gap-4">
-            <button 
+            <button
               onClick={() => onAddToCart(product)}
               className="flex-1 bg-primary text-stone-950 font-black py-6 rounded-2xl text-lg hover:scale-[1.02] transition-transform shadow-2xl shadow-primary/30 flex items-center justify-center gap-4"
             >
@@ -93,7 +93,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
               <span className="material-symbols-outlined">shopping_cart</span>
             </button>
           </div>
-          
+
           <div className="mt-8 flex items-center justify-center gap-8 text-xs font-bold text-stone-400">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-sm text-primary">verified</span>

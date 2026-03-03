@@ -36,7 +36,7 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
     <div className="space-y-32">
       {/* Hero Slider Section */}
       <section className="px-4 md:px-8 mt-8">
-        <div className="relative h-[75vh] w-full max-w-[1400px] mx-auto rounded-[3rem] flex items-center justify-center overflow-hidden bg-stone-50 border border-zinc-100 dark:border-zinc-800 shadow-sm">
+        <div className="relative h-[75vh] w-full max-w-[1400px] mx-auto flex items-center justify-center overflow-hidden bg-stone-50 border border-zinc-100 dark:border-zinc-800 shadow-sm">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -115,7 +115,7 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {products.slice(0, 3).map(product => (
-            <div key={product.id} className="group relative aspect-[4/5] overflow-hidden rounded-3xl bg-zinc-50 dark:bg-stone-950 border border-zinc-100 dark:border-zinc-800 shadow-sm transition-all hover:shadow-2xl">
+            <div key={product.id} className="group relative aspect-[4/5] overflow-hidden bg-zinc-50 dark:bg-stone-950 border border-zinc-100 dark:border-zinc-800 shadow-sm transition-all hover:shadow-2xl">
               <img src={product.image || undefined} className="w-full h-full object-cover grayscale-[0.2] transition-all duration-700 group-hover:scale-110 group-hover:grayscale-0" alt={product.name} />
               <button
                 onClick={(e) => {
