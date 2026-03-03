@@ -113,7 +113,7 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
           <div className="grid lg:grid-cols-2 gap-24 items-center">
             <div className="order-2 lg:order-1 aspect-[4/3] overflow-hidden shadow-2xl">
               <img
-                src={TEAM_IMAGE}
+                src={settings.craftsmanImage || TEAM_IMAGE}
                 className="size-full object-cover"
                 alt="Usta İşçiliği"
               />
@@ -121,22 +121,18 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
             <div className="order-1 lg:order-2 space-y-10">
               <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px]">Zanaatkarlarımız</span>
               <h2 className="text-4xl md:text-5xl font-display font-black italic text-stone-950 dark:text-white leading-tight">
-                Ustanın Elinden <br />Asil Sahibe.
+                {settings.craftsmanTitle || 'Ustanın Elinden Asil Sahibe.'}
               </h2>
               <div className="space-y-6 text-stone-600 dark:text-stone-400 leading-relaxed text-lg font-medium">
-                <p>
-                  Her tane, usta tornacıların onlarca yıllık birikiminin ürünüdür. Hammadden itibaren elle seçilen, analiz edilen ve işlenen kehribarlarımız, geleneksel yöntemlerle şekillendirilir.
-                </p>
-                <p>
-                  Osmanlı geleneğinden beslenip modern estetiğe kavuşan her eser, ellerimizden kalplerinize uzanan bir sanat yolculuğunun ürünüdür.
-                </p>
+                <p>{settings.craftsmanText1 || 'Her tane, usta tornacıların onlarca yıllık birikiminin ürünüdür.'}</p>
+                <p>{settings.craftsmanText2 || 'Osmanlı geleneğinden beslenip modern estetiğe kavuşan her eser.'}</p>
               </div>
               <div className="grid grid-cols-2 gap-6 pt-4">
                 {[
-                  { icon: 'diamond', title: 'El İşçiliği', desc: 'Her tane usta ellerde şekillenir' },
-                  { icon: 'verified', title: 'Lab Analizi', desc: 'Spektroskopi ile doğrulanmış' },
-                  { icon: 'history_edu', title: 'Osmanlı Mirası', desc: 'Asırlık gelenek, modern estetik' },
-                  { icon: 'local_shipping', title: 'Güvenli Teslimat', desc: 'Özel muhafaza kutusunda' },
+                  { icon: 'diamond', title: settings.craftsmanFeature1Title || 'El İşçiliği', desc: settings.craftsmanFeature1Desc || 'Her tane usta ellerde şekillenir' },
+                  { icon: 'verified', title: settings.craftsmanFeature2Title || 'Lab Analizi', desc: settings.craftsmanFeature2Desc || 'Spektroskopi ile doğrulanmış' },
+                  { icon: 'history_edu', title: settings.craftsmanFeature3Title || 'Osmanlı Mirası', desc: settings.craftsmanFeature3Desc || 'Asırlık gelenek, modern estetik' },
+                  { icon: 'local_shipping', title: settings.craftsmanFeature4Title || 'Güvenli Teslimat', desc: settings.craftsmanFeature4Desc || 'Özel muhafaza kutusunda' },
                 ].map((f, i) => (
                   <div key={i} className="flex gap-4 items-start">
                     <div className="size-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
