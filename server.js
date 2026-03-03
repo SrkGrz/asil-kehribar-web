@@ -165,7 +165,7 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(403).json({ error: 'Hesabınız yöneticiler tarafından engellenmiştir.' });
         }
 
-        const token = jwt.sign({ id: user.id, email: user.email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '7d' });
+        const token = jwt.sign({ id: user.id, email: user.email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1m' });
         res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (err) {
         res.status(500).json({ error: err.message });

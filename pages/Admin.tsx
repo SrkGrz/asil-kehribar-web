@@ -112,6 +112,48 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     initSession();
   }, []);
 
+  // Automatic Logout System (1 Minute)
+  useEffect(() => {
+    let timeout: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      if (timeout) clearTimeout(timeout);
+      if (isAdminAuthenticated) {
+        timeout = setTimeout(() => {
+          handleLogout();
+        }, 60000); // 60 seconds (1 minute)
+      }
+    };
+
+    const handleLogout = () => {
+      localStorage.removeItem('asil_auth_token');
+      setIsAdminAuthenticated(false);
+      setAuthUser(null);
+      setUserRole(null);
+      alert("Oturumunuz hareketsizlikten dolayı 1 dakika sonra otomatik olarak sonlandırılmıştır.");
+    };
+
+    if (isAdminAuthenticated) {
+      // Mouse move, click, or key press resets the timer
+      window.addEventListener('mousemove', resetTimer);
+      window.addEventListener('mousedown', resetTimer);
+      window.addEventListener('keypress', resetTimer);
+      window.addEventListener('scroll', resetTimer);
+      window.addEventListener('touchstart', resetTimer);
+
+      resetTimer(); // Start the timer
+    }
+
+    return () => {
+      if (timeout) clearTimeout(timeout);
+      window.removeEventListener('mousemove', resetTimer);
+      window.removeEventListener('mousedown', resetTimer);
+      window.removeEventListener('keypress', resetTimer);
+      window.removeEventListener('scroll', resetTimer);
+      window.removeEventListener('touchstart', resetTimer);
+    };
+  }, [isAdminAuthenticated]);
+
   const [passChange, setPassChange] = useState({
     current: '',
     new: '',
