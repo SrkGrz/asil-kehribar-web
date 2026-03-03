@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
 import { GoogleGenAI } from "@google/genai";
 import { fetchApi } from '../api';
-import { AmberType, Product, Slide, SiteSettings, BlogPost } from '../types';
+import { AmberType, Product, Slide, SiteSettings, BlogPost, Order } from '../types';
 type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
 
 const DEFAULT_PASSWORD = "admin";
@@ -17,9 +17,11 @@ interface AdminProps {
   setSettings: React.Dispatch<React.SetStateAction<SiteSettings>>;
   blogPosts: BlogPost[];
   setBlogPosts: React.Dispatch<React.SetStateAction<BlogPost[]>>;
+  orders: Order[];
+  setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
 }
 
-export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, setSlides, settings, setSettings, blogPosts, setBlogPosts }) => {
+export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, setSlides, settings, setSettings, blogPosts, setBlogPosts, orders, setOrders }) => {
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
   const [authUser, setAuthUser] = useState<any>(null);
   const [userRole, setUserRole] = useState<'admin' | 'editor' | null>(null);
@@ -414,6 +416,21 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     }
   };
 
+  const updateOrderStatus = async (id: string, status: Order['status']) => {
+    try {
+      const updatedOrder = await fetchApi(`/api/orders/${id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status })
+      });
+      setOrders(prev => prev.map(o => o.id === id ? updatedOrder : o));
+      if (selectedOrder?.id === id) {
+        setSelectedOrder(updatedOrder);
+      }
+    } catch (err: any) {
+      alert('Sipariş durumu güncellenemedi: ' + err.message);
+    }
+  };
+
   if (!isAdminAuthenticated) {
     return (
       <div className="min-h-[calc(100vh-80px)] bg-zinc-50 dark:bg-stone-50 flex items-center justify-center p-4">
@@ -463,15 +480,15 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: 'Toplam Eser', value: products.length, icon: 'inventory_2', color: 'bg-amber-500' },
-                { label: 'Aktif Sipariş', value: MOCK_ORDERS.length, icon: 'shopping_basket', color: 'bg-emerald-500' },
-                { label: 'Koleksiyoncu', value: MOCK_CUSTOMERS.length, icon: 'group', color: 'bg-blue-500' },
-                { label: 'Blog Yazısı', value: blogPosts.length, icon: 'article', color: 'bg-purple-500' }
+                { label: 'Toplam Gelir', value: `₺${orders.filter(o => o.status !== 'cancelled').reduce((acc, o) => acc + o.total, 0).toLocaleString('tr-TR')}`, icon: 'payments', color: 'bg-indigo-500' },
+                { label: 'Aktif Sipariş', value: orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length, icon: 'shopping_basket', color: 'bg-emerald-500' },
+                { label: 'Koleksiyoncu', value: new Set(orders.map(o => o.customer.email)).size, icon: 'group', color: 'bg-blue-500' },
+                { label: 'Toplam Eser', value: products.length, icon: 'inventory_2', color: 'bg-amber-500' }
               ].map((stat, i) => (
                 <div key={i} className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group hover:scale-105 transition-transform">
                   <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 ${stat.color} opacity-5 rounded-full`}></div>
                   <div className="relative z-10">
-                    <div className={`size-12 rounded-2xl ${stat.color} text-white flex items-center justify-center mb-6 shadow-lg shadow-${stat.label === 'Toplam Eser' ? 'amber' : i === 1 ? 'emerald' : i === 2 ? 'blue' : 'purple'}-500/20`}>
+                    <div className={`size-12 rounded-2xl ${stat.color} text-white flex items-center justify-center mb-6 shadow-lg shadow-500/20 shadow-${stat.color.split('-')[1]}`}>
                       <span className="material-symbols-outlined text-2xl">{stat.icon}</span>
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-1">{stat.label}</p>
@@ -492,25 +509,33 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <tbody className="divide-y divide-zinc-50 dark:divide-zinc-900">
-                      {MOCK_ORDERS.slice(0, 5).map(order => (
-                        <tr key={order.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                      {orders.slice(0, 5).map(order => (
+                        <tr key={order.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors cursor-pointer" onClick={() => { setSelectedOrder(order); setActiveView('orders'); }}>
                           <td className="p-6">
                             <div className="flex items-center gap-4">
                               <div className="size-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400">
                                 <span className="material-symbols-outlined text-sm">inventory</span>
                               </div>
                               <div>
-                                <p className="font-bold text-sm">{order.customer}</p>
+                                <p className="font-bold text-sm line-clamp-1">{order.customer.fullName}</p>
                                 <p className="text-[10px] text-stone-400">{order.id} • {order.date}</p>
                               </div>
                             </div>
                           </td>
                           <td className="p-6 text-right">
-                            <p className="font-black text-primary italic text-sm">{order.total}</p>
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-stone-400">{order.status}</span>
+                            <p className="font-black text-primary italic text-sm">₺{order.total.toLocaleString('tr-TR')}</p>
+                            <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${order.status === 'pending' ? 'bg-amber-100/10 text-amber-500' :
+                              order.status === 'delivered' ? 'bg-green-100/10 text-green-500' :
+                                'bg-zinc-100 dark:bg-zinc-800 text-stone-400'
+                              }`}>{order.status}</span>
                           </td>
                         </tr>
                       ))}
+                      {orders.length === 0 && (
+                        <tr>
+                          <td colSpan={2} className="p-12 text-center text-stone-400 italic text-sm">Henüz sipariş bulunmuyor.</td>
+                        </tr>
+                      )}
                     </tbody>
                   </table>
                 </div>
@@ -952,11 +977,11 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 <div className="p-8 grid md:grid-cols-2 gap-12 border-b border-zinc-100 dark:border-zinc-800">
                   <div>
                     <h3 className="text-[10px] font-black uppercase text-stone-400 mb-4 tracking-widest">Müşteri Bilgileri</h3>
-                    <p className="font-bold text-lg mb-1">{selectedOrder.customer}</p>
-                    <p className="text-sm text-stone-500 mb-4">koleksiyoncu@example.com</p>
+                    <p className="font-bold text-lg mb-1">{selectedOrder.customer.fullName}</p>
+                    <p className="text-sm text-stone-500 mb-4">{selectedOrder.customer.email}</p>
+                    <p className="text-sm font-bold mb-4">{selectedOrder.customer.phone}</p>
                     <p className="text-xs text-stone-400 leading-relaxed">
-                      Bağdat Caddesi No:123 D:4<br />
-                      Kadıköy, İstanbul / Türkiye
+                      {selectedOrder.customer.address}
                     </p>
                   </div>
                   <div>
@@ -964,7 +989,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-stone-500">Ara Toplam</span>
-                        <span className="font-bold">{selectedOrder.total}</span>
+                        <span className="font-bold">₺{selectedOrder.subtotal.toLocaleString('tr-TR')}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-stone-500">Kargo</span>
@@ -972,7 +997,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       </div>
                       <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex justify-between text-lg">
                         <span className="font-black italic">Toplam</span>
-                        <span className="font-black italic text-primary">{selectedOrder.total}</span>
+                        <span className="font-black italic text-primary">₺{selectedOrder.total.toLocaleString('tr-TR')}</span>
                       </div>
                     </div>
                   </div>
@@ -981,19 +1006,21 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 <div className="p-8">
                   <h3 className="text-[10px] font-black uppercase text-stone-400 mb-6 tracking-widest">Sipariş İçeriği</h3>
                   <div className="space-y-4">
-                    <div className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
-                      <div className="size-16 rounded-xl bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
-                        <img src="https://picsum.photos/seed/amber1/200/200" className="size-full object-cover" alt="" />
+                    {selectedOrder.items.map((item: any, idx: number) => (
+                      <div key={idx} className="flex items-center gap-4 p-4 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-zinc-100 dark:border-zinc-800">
+                        <div className="size-16 rounded-xl bg-zinc-200 dark:bg-zinc-700 overflow-hidden">
+                          <img src={item.image || "https://picsum.photos/seed/amber1/200/200"} className="size-full object-cover" alt="" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-bold text-sm">{item.name}</p>
+                          <p className="text-[10px] text-stone-400 uppercase font-black">{item.type} • {item.size}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-black text-primary italic text-sm">₺{item.price.toLocaleString('tr-TR')}</p>
+                          <p className="text-[10px] text-stone-400 font-bold">{item.quantity} Adet</p>
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="font-bold">Özel Kesim Baltık Damla Kehribar</p>
-                        <p className="text-[10px] text-stone-400 uppercase font-black">9x12mm • Gümüş İmame</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-black text-primary italic">{selectedOrder.total}</p>
-                        <p className="text-[10px] text-stone-400 font-bold">1 Adet</p>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1017,16 +1044,29 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-                  {MOCK_ORDERS.map((order) => (
+                  {orders.map((order) => (
                     <tr key={order.id} className="hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                       <td className="p-6 font-bold text-sm">{order.id}</td>
-                      <td className="p-6 text-sm font-medium">{order.customer}</td>
+                      <td className="p-6 text-sm font-medium">{order.customer.fullName}</td>
                       <td className="p-6 text-sm opacity-60">{order.date}</td>
-                      <td className="p-6 font-black text-primary italic text-sm">{order.total}</td>
+                      <td className="p-6 font-black text-primary italic text-sm">₺{order.total.toLocaleString('tr-TR')}</td>
                       <td className="p-6">
-                        <span className="px-2 py-1 bg-zinc-100 dark:bg-zinc-800 rounded text-[10px] font-black uppercase text-stone-500">
-                          {order.status}
-                        </span>
+                        <select
+                          value={order.status}
+                          onChange={(e) => updateOrderStatus(order.id, e.target.value as any)}
+                          className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest border-none cursor-pointer focus:ring-2 focus:ring-primary ${order.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                            order.status === 'preparing' ? 'bg-blue-100 text-blue-700' :
+                              order.status === 'shipped' ? 'bg-purple-100 text-purple-700' :
+                                order.status === 'delivered' ? 'bg-green-100 text-green-700' :
+                                  'bg-red-100 text-red-700'
+                            }`}
+                        >
+                          <option value="pending">BEKLEMEDE</option>
+                          <option value="preparing">HAZIRLANIYOR</option>
+                          <option value="shipped">KARGOLANDI</option>
+                          <option value="delivered">TESLİM EDİLDİ</option>
+                          <option value="cancelled">İPTAL</option>
+                        </select>
                       </td>
                       <td className="p-6 text-right">
                         <button

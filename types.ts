@@ -57,3 +57,19 @@ export interface BlogPost {
   image: string;
   date: string;
 }
+
+export interface Order {
+  id: string;
+  customer: {
+    fullName: string;
+    email: string;
+    phone: string;
+    address: string;
+  };
+  items: CartItem[];
+  subtotal: number;
+  total: number;
+  status: 'pending' | 'preparing' | 'shipped' | 'delivered' | 'cancelled';
+  date: string;
+  createdAt?: string;
+}

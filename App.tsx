@@ -12,7 +12,7 @@ import { Favorites } from './pages/Favorites';
 import { Returns } from './pages/Returns';
 import { Certificates } from './pages/Certificates';
 import { ProductDetail } from './pages/ProductDetail';
-import { CartItem, Product, Slide, SiteSettings, BlogPost } from './types';
+import { CartItem, Product, Slide, SiteSettings, BlogPost, Order } from './types';
 import { MOCK_PRODUCTS, DEFAULT_SLIDES, DEFAULT_SETTINGS, DEFAULT_BLOG_POSTS } from './constants';
 import { fetchApi } from './api';
 
@@ -251,22 +251,25 @@ export default function App() {
   const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   // 1. AŞAMA: MongoDB Atlas tabanlı API üzerinden Veri Çekme
   useEffect(() => {
     const fetchAllData = async () => {
       try {
-        const [pData, sData, bData, settsData] = await Promise.all([
+        const [pData, sData, bData, settsData, oData] = await Promise.all([
           fetchApi('/api/products').catch(() => null),
           fetchApi('/api/slides').catch(() => null),
           fetchApi('/api/blog').catch(() => null),
-          fetchApi('/api/settings').catch(() => null)
+          fetchApi('/api/settings').catch(() => null),
+          fetchApi('/api/orders').catch(() => null)
         ]);
 
         if (pData && pData.length > 0) setProducts(pData);
         if (sData && sData.length > 0) setSlides(sData.sort((a: any, b: any) => (a.id > b.id ? 1 : -1)));
         if (bData && bData.length > 0) setBlogPosts(bData);
         if (settsData) setSettings(settsData);
+        if (oData) setOrders(oData);
       } catch (err: any) {
         console.warn("API verileri alınamadı, lokal veriler kullanılıyor:", err.message);
       }
@@ -315,8 +318,8 @@ export default function App() {
             <Route path="/about" element={<About settings={settings} />} />
             <Route path="/blog" element={<Blog blogPosts={blogPosts} />} />
             <Route path="/contact" element={<Contact settings={settings} />} />
-            <Route path="/checkout" element={<Checkout cart={cart} onRemove={removeFromCart} />} />
-            <Route path="/admin" element={<Admin products={products} setProducts={setProducts} slides={slides} setSlides={setSlides} settings={settings} setSettings={setSettings} blogPosts={blogPosts} setBlogPosts={setBlogPosts} />} />
+            <Route path="/checkout" element={<Checkout cart={cart} onRemove={removeFromCart} clearCart={() => setCart([])} />} />
+            <Route path="/admin" element={<Admin products={products} setProducts={setProducts} slides={slides} setSlides={setSlides} settings={settings} setSettings={setSettings} blogPosts={blogPosts} setBlogPosts={setBlogPosts} orders={orders} setOrders={setOrders} />} />
             <Route path="/favorites" element={<Favorites favorites={favorites} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />} />
             <Route path="/returns" element={<Returns />} />
             <Route path="/certificates" element={<Certificates />} />

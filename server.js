@@ -83,6 +83,22 @@ const SettingsSchema = new mongoose.Schema({
 }, { strict: false });
 const Settings = mongoose.model('Settings', SettingsSchema);
 
+const OrderSchema = new mongoose.Schema({
+    id: { type: String, unique: true },
+    customer: {
+        fullName: String,
+        email: String,
+        phone: String,
+        address: String
+    },
+    items: Array,
+    subtotal: Number,
+    total: Number,
+    status: { type: String, default: 'pending' },
+    date: String
+}, { timestamps: true });
+const Order = mongoose.model('Order', OrderSchema);
+
 // --- MIDDLEWARES ---
 const authMiddleware = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
@@ -197,6 +213,25 @@ const createCrudEndpoints = (model, baseRoute) => {
 createCrudEndpoints(Product, '/api/products');
 createCrudEndpoints(Slide, '/api/slides');
 createCrudEndpoints(Blog, '/api/blog');
+
+app.get('/api/orders', authMiddleware, async (req, res) => {
+    try { res.json(await Order.find({}).sort({ createdAt: -1 })); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/orders', async (req, res) => {
+    try {
+        const order = await Order.create({ ...req.body, status: 'pending', id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase() });
+        res.json(order);
+    } catch (err) { res.status(400).json({ error: err.message }); }
+});
+
+app.post('/api/orders/:id/status', authMiddleware, async (req, res) => {
+    try {
+        const order = await Order.findOneAndUpdate({ id: req.params.id }, { status: req.body.status }, { new: true });
+        res.json(order);
+    } catch (err) { res.status(400).json({ error: err.message }); }
+});
 
 // Settings API is slightly different (singleton)
 app.get('/api/settings', async (req, res) => {
