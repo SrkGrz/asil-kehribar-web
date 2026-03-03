@@ -174,9 +174,12 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     image: '',
     date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
   });
+  const [isBlogSaving, setIsBlogSaving] = useState(false);
+  const [blogSaved, setBlogSaved] = useState(false);
 
   const saveBlogPost = async () => {
     if (!editingBlogPost.title || !editingBlogPost.content) return;
+    setIsBlogSaving(true);
     try {
       let id = editingBlogPost.id;
       if (!id) id = Date.now().toString();
@@ -187,10 +190,16 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         if (exists) return prev.map(p => p.id === id ? newPost : p);
         return [...prev, newPost];
       });
-      setIsEditingBlog(false);
-      setEditingBlogPost({ title: '', excerpt: '', content: '', image: '', date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) });
+      setBlogSaved(true);
+      setTimeout(() => {
+        setBlogSaved(false);
+        setIsEditingBlog(false);
+        setEditingBlogPost({ title: '', excerpt: '', content: '', image: '', date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) });
+      }, 1000);
     } catch (err: any) {
       alert('Blog kaydedilemedi: ' + err.message);
+    } finally {
+      setIsBlogSaving(false);
     }
   };
 
@@ -439,6 +448,100 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
 
   const renderContent = () => {
     switch (activeView) {
+      case 'dashboard':
+        return (
+          <div className="max-w-6xl mx-auto space-y-12 animate-in fade-in duration-500">
+            {/* Header */}
+            <div>
+              <h1 className="text-4xl font-display font-black italic mb-2">Padişahın Otağı</h1>
+              <p className="text-stone-500">Sarayın genel envanter ve koleksiyon durumuna göz atın.</p>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { label: 'Toplam Eser', value: products.length, icon: 'inventory_2', color: 'bg-amber-500' },
+                { label: 'Aktif Sipariş', value: MOCK_ORDERS.length, icon: 'shopping_basket', color: 'bg-emerald-500' },
+                { label: 'Koleksiyoncu', value: MOCK_CUSTOMERS.length, icon: 'group', color: 'bg-blue-500' },
+                { label: 'Blog Yazısı', value: blogPosts.length, icon: 'article', color: 'bg-purple-500' }
+              ].map((stat, i) => (
+                <div key={i} className="bg-white dark:bg-stone-900 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm relative overflow-hidden group hover:scale-105 transition-transform">
+                  <div className={`absolute top-0 right-0 w-32 h-32 -mr-8 -mt-8 ${stat.color} opacity-5 rounded-full`}></div>
+                  <div className="relative z-10">
+                    <div className={`size-12 rounded-2xl ${stat.color} text-white flex items-center justify-center mb-6 shadow-lg shadow-${stat.label === 'Toplam Eser' ? 'amber' : i === 1 ? 'emerald' : i === 2 ? 'blue' : 'purple'}-500/20`}>
+                      <span className="material-symbols-outlined text-2xl">{stat.icon}</span>
+                    </div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mb-1">{stat.label}</p>
+                    <p className="text-4xl font-display font-black italic text-stone-950 dark:text-white leading-none">{stat.value}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Main Grid: Orders & Actions */}
+            <div className="grid lg:grid-cols-12 gap-8">
+              {/* Recent Orders */}
+              <div className="lg:col-span-8 bg-white dark:bg-stone-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                <div className="p-8 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center">
+                  <h3 className="font-black italic text-xl">Son Sipariş Akışı</h3>
+                  <button onClick={() => setActiveView('orders')} className="text-[10px] font-black uppercase text-primary hover:underline underline-offset-4">Tümünü Gör →</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <tbody className="divide-y divide-zinc-50 dark:divide-zinc-900">
+                      {MOCK_ORDERS.slice(0, 5).map(order => (
+                        <tr key={order.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
+                          <td className="p-6">
+                            <div className="flex items-center gap-4">
+                              <div className="size-10 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-stone-400">
+                                <span className="material-symbols-outlined text-sm">inventory</span>
+                              </div>
+                              <div>
+                                <p className="font-bold text-sm">{order.customer}</p>
+                                <p className="text-[10px] text-stone-400">{order.id} • {order.date}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-6 text-right">
+                            <p className="font-black text-primary italic text-sm">{order.total}</p>
+                            <span className="text-[8px] font-black uppercase px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded text-stone-400">{order.status}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Quick Actions */}
+              <div className="lg:col-span-4 space-y-6">
+                <div className="bg-stone-900 dark:bg-zinc-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
+                    <span className="material-symbols-outlined text-[120px]">auto_fix_high</span>
+                  </div>
+                  <h3 className="text-xl font-black italic mb-4 relative z-10">Akıllı Yönetim</h3>
+                  <p className="text-sm text-stone-400 mb-8 relative z-10 leading-relaxed">Yapay zeka asistanı ile envanterinizi saniyeler içinde zenginleştirin.</p>
+                  <button onClick={() => setActiveView('import')} className="w-full bg-primary text-stone-950 py-4 rounded-xl font-black text-xs uppercase tracking-widest relative z-10 hover:scale-105 transition-all">İÇE AKTARMA BAŞLAT</button>
+                </div>
+
+                <div className="bg-white dark:bg-stone-950 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+                  <h3 className="text-xs font-black uppercase text-stone-400 mb-6 tracking-widest">Hızlı Erişim</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button onClick={() => { setEditingProduct({ name: '', price: 0, description: '', specs: '', type: AmberType.ATES, image: '' }); setIsEditing(true); setActiveView('products'); }} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
+                      <span className="material-symbols-outlined text-amber-600">add_circle</span>
+                      <span className="text-[10px] font-bold">Yeni Ürün</span>
+                    </button>
+                    <button onClick={() => { setEditingBlogPost({ title: '', excerpt: '', content: '', image: '', date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }); setIsEditingBlog(true); setActiveView('blog'); }} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
+                      <span className="material-symbols-outlined text-purple-600">post_add</span>
+                      <span className="text-[10px] font-bold">Blog Yaz</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+
       case 'products':
         if (isEditing) {
           return (
@@ -1495,8 +1598,17 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 </div>
                 <div className="flex gap-4">
                   <button onClick={() => setIsEditingBlog(false)} className="px-6 py-3 rounded-lg border border-zinc-300 dark:border-zinc-700 font-bold text-sm">Vazgeç</button>
-                  <button onClick={saveBlogPost} className="px-6 py-3 rounded-lg bg-primary text-stone-950 font-black text-sm shadow-lg shadow-primary/20 hover:scale-105 transition-transform">
-                    KAYDET
+                  <button
+                    onClick={saveBlogPost}
+                    disabled={isBlogSaving}
+                    className="flex items-center gap-3 bg-primary text-stone-950 px-8 py-4 font-black text-sm uppercase tracking-widest shadow-lg shadow-primary/20 hover:scale-105 transition-all disabled:opacity-50"
+                  >
+                    {isBlogSaving ? (
+                      <div className="size-4 border-2 border-stone-950/30 border-t-stone-950 rounded-full animate-spin" />
+                    ) : (
+                      <span className="material-symbols-outlined text-sm">save</span>
+                    )}
+                    {blogSaved ? 'KAYDEDILDI ✓' : 'KAYDET'}
                   </button>
                 </div>
               </div>
