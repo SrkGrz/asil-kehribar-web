@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Product, AmberType } from '../types';
 
 interface ShopProps {
@@ -11,6 +11,7 @@ interface ShopProps {
 }
 
 export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavorite, products }) => {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
   const [activeType, setActiveType] = useState<string>('Tümü');
@@ -154,8 +155,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
               <button
                 onClick={() => {
                   setActiveType('Tümü');
-                  // Clear search query by navigating back to /shop
-                  window.location.href = '#/shop';
+                  navigate('/shop');
                 }}
                 className="mt-6 px-8 py-3 bg-primary text-stone-950 font-black uppercase tracking-widest rounded-xl hover:scale-105 transition-transform"
               >
