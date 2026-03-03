@@ -43,7 +43,8 @@ const ProductSchema = new mongoose.Schema({
     description: String,
     longDescription: String,
     isNew: Boolean,
-    isSpecial: Boolean
+    isSpecial: Boolean,
+    stock: { type: Number, default: 0 }
 });
 const Product = mongoose.model('Product', ProductSchema);
 
@@ -108,6 +109,38 @@ const authMiddleware = (req, res, next) => {
         req.user = dec;
         next();
     } catch (err) { res.status(401).json({ error: 'Geçersiz Token' }); }
+};
+
+// --- EMAIL SERVICE ---
+import nodemailer from 'nodemailer';
+
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: process.env.SMTP_PORT || 587,
+    secure: false, // true for 465, false for other ports
+    auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+    },
+});
+
+const sendEmail = async (to, subject, text, html) => {
+    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('📬 E-posta gönderimi devre dışı (SMTP ayarları eksik). Gönderilecek içerik:', { to, subject });
+        return;
+    }
+    try {
+        await transporter.sendMail({
+            from: `"Asil Kehribar" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+            to,
+            subject,
+            text,
+            html,
+        });
+        console.log(`✅ E-posta gönderildi: ${to}`);
+    } catch (err) {
+        console.error('❌ E-posta gönderim hatası:', err.message);
+    }
 };
 
 // --- AUTH API ---
@@ -221,7 +254,42 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
 
 app.post('/api/orders', async (req, res) => {
     try {
-        const order = await Order.create({ ...req.body, status: 'pending', id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase() });
+        const orderId = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+        const order = await Order.create({ ...req.body, status: 'pending', id: orderId });
+
+        // Decrease stock for each item
+        for (const item of req.body.items) {
+            await Product.findOneAndUpdate(
+                { id: item.id },
+                { $inc: { stock: -item.quantity } }
+            );
+        }
+
+        // Send confirmation email
+        const orderSummary = req.body.items.map(i => `${i.name} (${i.quantity} adet) - ₺${i.price}`).join('\n');
+        const emailHtml = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+                <h2 style="color: #b45309;">Siparişiniz Alındı!</h2>
+                <p>Sayın ${req.body.customer.fullName},</p>
+                <p><strong>${orderId}</strong> numaralı siparişiniz başarıyla sistemimize ulaşmıştır.</p>
+                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                    <h3 style="margin-top: 0;">Sipariş Özeti</h3>
+                    <p style="white-space: pre-line;">${orderSummary}</p>
+                    <hr>
+                    <p><strong>Toplam: ₺${req.body.total.toLocaleString('tr-TR')}</strong></p>
+                </div>
+                <p>Ürünleriniz en kısa sürede hazırlanıp kargoya verilecektir.</p>
+                <p>Bizi tercih ettiğiniz için teşekkürler.</p>
+            </div>
+        `;
+
+        await sendEmail(
+            req.body.customer.email,
+            'Siparişiniz Alındı - Asil Kehribar',
+            `Siparişiniz için teşekkürler! Sipariş numaranız: ${orderId}`,
+            emailHtml
+        );
+
         res.json(order);
     } catch (err) { res.status(400).json({ error: err.message }); }
 });
@@ -229,6 +297,36 @@ app.post('/api/orders', async (req, res) => {
 app.post('/api/orders/:id/status', authMiddleware, async (req, res) => {
     try {
         const order = await Order.findOneAndUpdate({ id: req.params.id }, { status: req.body.status }, { new: true });
+
+        // Notification for specific statuses
+        if (req.body.status === 'shipped') {
+            const emailHtml = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+                    <h2 style="color: #059669;">Siparişiniz Kargoya Verildi!</h2>
+                    <p>Sayın ${order.customer.fullName},</p>
+                    <p><strong>${order.id}</strong> numaralı siparişiniz kargoya teslim edilmiştir.</p>
+                    <p>Keyifli alışverişler dileriz.</p>
+                </div>
+            `;
+            await sendEmail(order.customer.email, 'Siparişiniz Yolda! - Asil Kehribar', 'Siparişiniz kargoya verildi.', emailHtml);
+        } else if (req.body.status === 'cancelled') {
+            // Return stock if cancelled
+            for (const item of order.items) {
+                await Product.findOneAndUpdate(
+                    { id: item.id },
+                    { $inc: { stock: item.quantity } }
+                );
+            }
+            const emailHtml = `
+                <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+                    <h2 style="color: #dc2626;">Siparişiniz İptal Edildi</h2>
+                    <p>Sayın ${order.customer.fullName},</p>
+                    <p><strong>${order.id}</strong> numaralı siparişiniz iptal edilmiştir.</p>
+                </div>
+            `;
+            await sendEmail(order.customer.email, 'Sipariş İptali - Asil Kehribar', 'Siparişiniz iptal edildi.', emailHtml);
+        }
+
         res.json(order);
     } catch (err) { res.status(400).json({ error: err.message }); }
 });

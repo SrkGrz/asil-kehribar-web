@@ -146,7 +146,8 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     size: '',
     color: '',
     type: 'Diğer',
-    image: ''
+    image: '',
+    stock: 0
   });
 
   // Smart Import States
@@ -498,6 +499,32 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
               ))}
             </div>
 
+            {/* Stock Alerts */}
+            {products.filter(p => (p.stock || 0) < 5).length > 0 && (
+              <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 p-8 rounded-3xl animate-pulse">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="size-10 rounded-full bg-red-500 text-white flex items-center justify-center">
+                    <span className="material-symbols-outlined text-xl">warning</span>
+                  </div>
+                  <div>
+                    <h3 className="font-black italic text-xl text-red-900 dark:text-red-400">Kritik Stok Uyarıları</h3>
+                    <p className="text-sm text-red-700 dark:text-red-500/70">Aşağıdaki eserlerin mevcudu tükenmek üzere!</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {products.filter(p => (p.stock || 0) < 5).map(p => (
+                    <div key={p.id} className="bg-white dark:bg-stone-900 p-4 rounded-2xl flex items-center justify-between border border-red-100 dark:border-red-900/20">
+                      <div className="flex items-center gap-3">
+                        <img src={p.image} className="size-10 rounded-lg object-cover" alt="" />
+                        <span className="font-bold text-sm line-clamp-1">{p.name}</span>
+                      </div>
+                      <span className="font-black text-red-600">{(p.stock || 0)} Adet</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Main Grid: Orders & Actions */}
             <div className="grid lg:grid-cols-12 gap-8">
               {/* Recent Orders */}
@@ -634,7 +661,16 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                           </div>
                         </div>
                       </div>
-                      <div className="grid md:grid-cols-2 gap-6">
+                      <div className="grid md:grid-cols-3 gap-6">
+                        <div>
+                          <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Stok Miktarı</label>
+                          <input
+                            type="number"
+                            value={editingProduct.stock}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, stock: Number(e.target.value) })}
+                            className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-xl p-4 font-bold text-amber-600"
+                          />
+                        </div>
                         <div>
                           <label className="block text-[10px] font-black uppercase text-stone-500 mb-2">Ölçü (Örn: 9x12mm)</label>
                           <input
@@ -739,7 +775,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
               </div>
               <button
                 onClick={() => {
-                  setEditingProduct({ name: '', price: 0, description: '', longDescription: '', specs: '', size: '', color: '', type: 'Diğer', image: '' });
+                  setEditingProduct({ name: '', price: 0, description: '', longDescription: '', specs: '', size: '', color: '', type: 'Diğer', image: '', stock: 1 });
                   setIsEditing(true);
                 }}
                 className="bg-primary text-stone-950 px-8 py-4 rounded-xl font-black text-sm flex items-center gap-2 hover:scale-105 transition-all shadow-lg shadow-primary/20"
@@ -754,6 +790,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                   <tr className="bg-zinc-50 dark:bg-zinc-800/50">
                     <th className="p-6 text-[10px] font-black uppercase text-stone-500 tracking-widest">Eser</th>
                     <th className="p-6 text-[10px] font-black uppercase text-stone-500 tracking-widest">Tür</th>
+                    <th className="p-6 text-[10px] font-black uppercase text-stone-500 tracking-widest">Stok</th>
                     <th className="p-6 text-[10px] font-black uppercase text-stone-500 tracking-widest">Fiyat</th>
                     <th className="p-6 text-[10px] font-black uppercase text-stone-500 tracking-widest">İşlemler</th>
                   </tr>
@@ -773,6 +810,11 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       <td className="p-6">
                         <span className="px-3 py-1 bg-zinc-100 dark:bg-zinc-800 rounded-full text-[10px] font-black uppercase text-stone-500">
                           {product.type}
+                        </span>
+                      </td>
+                      <td className="p-6">
+                        <span className={`font-black text-sm ${(product.stock || 0) < 5 ? 'text-red-500' : 'text-stone-400'}`}>
+                          {product.stock || 0} Adet
                         </span>
                       </td>
                       <td className="p-6 font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</td>

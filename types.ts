@@ -13,6 +13,7 @@ export interface Product {
   longDescription: string;
   isNew?: boolean;
   isSpecial?: boolean;
+  stock?: number;
 }
 
 export interface CartItem extends Product {
