@@ -175,12 +175,12 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
                                     <h3 className="font-display text-3xl text-white font-bold mb-4 italic leading-tight">{product.name}</h3>
                                     <div className="flex items-center justify-between">
                                         <span className="text-2xl font-black text-white italic">₺{product.price.toLocaleString('tr-TR')}</span>
-                                        <a
-                                            href={`/product/${product.id}`}
-                                            className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-stone-950 transition-all font-black"
+                                        <Link
+                                            to={`/product/${product.id}`}
+                                            className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-stone-950 transition-all font-black text-center"
                                         >
                                             DETAYI GÖR
-                                        </a>
+                                        </Link>
                                     </div>
                                 </div>
                             </div>

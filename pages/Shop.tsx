@@ -103,7 +103,17 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
 
         {/* Grid */}
         <div className="flex-1">
-          {filteredProducts.length > 0 ? (
+          {products.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-[4/5] bg-stone-100 dark:bg-zinc-800 rounded-2xl mb-4"></div>
+                  <div className="h-4 bg-stone-100 dark:bg-zinc-800 rounded w-2/3 mb-2"></div>
+                  <div className="h-4 bg-stone-100 dark:bg-zinc-800 rounded w-1/2"></div>
+                </div>
+              ))}
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {filteredProducts.map(product => (
                 <div key={product.id} className="group bg-white dark:bg-stone-950 border border-zinc-100 dark:border-zinc-800 overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
