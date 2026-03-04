@@ -19,12 +19,51 @@
             "dest": "/api/index.js"
         },
         {
-            "src": "/assets/(.*)",
-            "dest": "/assets/$1"
+            "handle": "filesystem"
         },
         {
-            "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|map))",
-            "dest": "/$1"
+            "src": "/product/?(.*)",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/shop",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/koleksiyoner",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/about",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/contact",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/blog",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/admin",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/favorites",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/checkout",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/returns",
+            "dest": "/index.html"
+        },
+        {
+            "src": "/certificates",
+            "dest": "/index.html"
         },
         {
             "src": "/(.*)",
