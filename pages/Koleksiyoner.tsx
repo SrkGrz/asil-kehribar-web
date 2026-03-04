@@ -52,41 +52,51 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            if (!file.type.startsWith('image/')) {
-                alert("Lütfen sadece resim dosyası seçin.");
-                return;
-            }
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let { width, height } = img;
-                    const MAX_WIDTH = 1000;
-                    const MAX_HEIGHT = 1200;
+        const files = e.target.files;
+        if (files) {
+            const newImages: string[] = [];
+            let processedCount = 0;
 
-                    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-                        width = width * ratio;
-                        height = height * ratio;
-                    }
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
 
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    if (ctx) {
-                        ctx.drawImage(img, 0, 0, width, height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                        setFormData(prev => ({ ...prev, image: dataUrl }));
-                    } else {
-                        setFormData(prev => ({ ...prev, image: reader.result as string }));
-                    }
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let { width, height } = img;
+                        const MAX_WIDTH = 1000;
+                        const MAX_HEIGHT = 1200;
+
+                        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                            const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                            width = width * ratio;
+                            height = height * ratio;
+                        }
+
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            ctx.drawImage(img, 0, 0, width, height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                            newImages.push(dataUrl);
+                        }
+
+                        processedCount++;
+                        if (processedCount === Array.from(files).filter(f => f.type.startsWith('image/')).length) {
+                            setFormData(prev => ({
+                                ...prev,
+                                images: [...(prev.images || []), ...newImages],
+                                image: prev.image || newImages[0] // Set first image as main if none exists
+                            }));
+                        }
+                    };
+                    img.src = reader.result as string;
                 };
-                img.src = reader.result as string;
-            };
-            reader.readAsDataURL(file);
+                reader.readAsDataURL(file);
+            });
         }
     };
 

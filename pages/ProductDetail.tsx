@@ -25,6 +25,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
     );
   }
 
+  const [activeImage, setActiveImage] = React.useState(product.image);
+
+  // Sync activeImage if product change
+  React.useEffect(() => {
+    setActiveImage(product.image);
+  }, [product]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
       <button
@@ -48,18 +55,33 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
 
       <div className="grid lg:grid-cols-12 gap-12 lg:gap-16">
         {/* Left: Images */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="aspect-[4/5] overflow-hidden bg-zinc-100 dark:bg-stone-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl relative">
-            <img src={product.image || undefined} className="size-full object-cover" alt={product.name} />
+        <div className="lg:col-span-5 space-y-4">
+          <div className="aspect-[4/5] overflow-hidden bg-zinc-100 dark:bg-stone-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl relative group">
+            <img src={activeImage || undefined} className="size-full object-cover transition-transform duration-700 group-hover:scale-110" alt={product.name} />
             <button
               onClick={() => onToggleFavorite(product)}
-              className={`absolute top-6 right-6 size-14 rounded-full flex items-center justify-center shadow-2xl transition-all ${isFavorite ? 'bg-primary text-stone-950' : 'bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md text-stone-950 dark:text-white'}`}
+              className={`absolute top-6 right-6 size-14 rounded-full flex items-center justify-center shadow-2xl transition-all ${isFavorite ? 'bg-primary text-stone-950' : 'bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md text-stone-950 dark:text-white hover:bg-primary hover:text-stone-950'}`}
             >
               <span className={`material-symbols-outlined text-2xl ${isFavorite ? 'fill-1' : ''}`}>
                 favorite
               </span>
             </button>
           </div>
+
+          {/* Thumbnails */}
+          {product.images && product.images.length > 0 && (
+            <div className="grid grid-cols-5 gap-3">
+              {[product.image, ...product.images.filter(img => img !== product.image)].map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setActiveImage(img)}
+                  className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${activeImage === img ? 'border-primary ring-2 ring-primary/20 scale-95' : 'border-zinc-200 dark:border-zinc-800 hover:border-primary/50'}`}
+                >
+                  <img src={img} className="size-full object-cover" alt={`Resim ${idx + 1}`} />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right: Info */}
