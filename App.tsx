@@ -12,6 +12,7 @@ import { Favorites } from './pages/Favorites';
 import { Returns } from './pages/Returns';
 import { Certificates } from './pages/Certificates';
 import { ProductDetail } from './pages/ProductDetail';
+import { Koleksiyoner } from './pages/Koleksiyoner';
 import { CartItem, Product, Slide, SiteSettings, BlogPost, Order } from './types';
 import { MOCK_PRODUCTS, DEFAULT_SLIDES, DEFAULT_SETTINGS, DEFAULT_BLOG_POSTS } from './constants';
 import { fetchApi } from './api';
@@ -62,6 +63,7 @@ const Navbar = ({ cartCount, favCount }: { cartCount: number, favCount: number }
               <Link to="/shop" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Koleksiyon</Link>
               <Link to="/about" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Hakkımızda</Link>
               <Link to="/contact" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">İletişim</Link>
+              <Link to="/koleksiyoner" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors italic">Koleksiyoner</Link>
               <Link to="/blog" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Blog</Link>
             </nav>
           </div>
@@ -248,7 +250,7 @@ export default function App() {
 
   // Data States
   const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
-  const [slides, setSlides] = useState<Slide[]>(DEFAULT_SLIDES);
+  const [slides, setSlides] = useState<Slide[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -321,6 +323,7 @@ export default function App() {
             <Route path="/checkout" element={<Checkout cart={cart} onRemove={removeFromCart} clearCart={() => setCart([])} />} />
             <Route path="/admin" element={<Admin products={products} setProducts={setProducts} slides={slides} setSlides={setSlides} settings={settings} setSettings={setSettings} blogPosts={blogPosts} setBlogPosts={setBlogPosts} orders={orders} setOrders={setOrders} />} />
             <Route path="/favorites" element={<Favorites favorites={favorites} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />} />
+            <Route path="/koleksiyoner" element={<Koleksiyoner products={products} onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
             <Route path="/returns" element={<Returns />} />
             <Route path="/certificates" element={<Certificates />} />
           </Routes>

@@ -24,8 +24,14 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
     return () => clearInterval(timer);
   }, [slides]);
 
-  if (!slides || slides.length === 0) {
-    return <div className="h-[75vh] bg-stone-50 flex items-center justify-center">No slides available</div>;
+  if (!slides) {
+    return <div className="h-[75vh] bg-stone-50 flex items-center justify-center animate-pulse">
+      <div className="text-stone-300 font-display italic">Koleksiyon Yükleniyor...</div>
+    </div>;
+  }
+
+  if (slides.length === 0) {
+    return null; // Return nothing if definitely empty, or a subtle placeholder
   }
 
   // Ensure currentSlide is bounds-checked (defensive programming against dynamic slide arrays)
