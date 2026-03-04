@@ -10,9 +10,10 @@ interface HomeProps {
   onToggleFavorite: (product: Product) => void;
   products: Product[];
   slides: Slide[];
+  isLoading?: boolean;
 }
 
-export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavorite, products, slides }) => {
+export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavorite, products, slides, isLoading }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const isFavorite = (id: string) => favorites.some(p => p.id === id);
 
