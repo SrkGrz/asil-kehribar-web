@@ -760,46 +760,82 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       <span className="material-symbols-outlined text-primary">image</span> Ürün Görseli
                     </h2>
                     <div className="space-y-4">
-                      {editingProduct.image && (
-                        <div className="relative group">
-                          <img src={editingProduct.image || undefined} className="w-full aspect-square object-cover rounded-xl mb-4 shadow-lg" alt="Preview" />
-                          <button
-                            onClick={() => setEditingProduct({ ...editingProduct, image: '' })}
-                            className="absolute top-2 right-2 size-8 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg"
-                          >
-                            <span className="material-symbols-outlined text-sm">close</span>
-                          </button>
-                        </div>
-                      )}
-                      <div className="relative">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => handleFileChange(e, (base64) => setEditingProduct({ ...editingProduct, image: base64 }))}
-                          className="hidden"
-                          id="image-upload"
-                        />
-                        <label
-                          htmlFor="image-upload"
-                          className="flex flex-col items-center justify-center w-full aspect-square rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-primary hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-all cursor-pointer group"
-                        >
-                          <span className="material-symbols-outlined text-4xl text-stone-300 group-hover:text-primary mb-2">add_photo_alternate</span>
-                          <span className="text-[10px] font-black uppercase text-stone-400 group-hover:text-primary">Görsel Yükle</span>
-                          <span className="text-[9px] text-stone-400 mt-2 font-bold">Önerilen: 800x1000px (4:5)</span>
-                          <span className="text-[9px] text-stone-400 font-bold">Maksimum: 2MB</span>
+                      {/* Main Image View */}
+                      <div className="relative group aspect-square rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-800">
+                        <img src={editingProduct.image || undefined} className="size-full object-cover" alt="Main" />
+                        <label className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center cursor-pointer text-white">
+                          <span className="material-symbols-outlined text-4xl mb-2">change_circle</span>
+                          <span className="text-[10px] font-black uppercase">Ana Resmi Değiştir</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFileChange(e, (res) => setEditingProduct({ ...editingProduct, image: res as string }))}
+                          />
                         </label>
                       </div>
-                      <div className="pt-4">
-                        <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-2">Veya Görsel URL</label>
-                        <input
-                          type="text"
-                          value={editingProduct.image}
-                          onChange={(e) => setEditingProduct({ ...editingProduct, image: e.target.value })}
-                          className="w-full bg-zinc-50 dark:bg-stone-50 border-none rounded-xl p-4 font-bold text-stone-950"
-                          placeholder="https://..."
-                        />
+
+                      {/* Multi Image List */}
+                      <div className="grid grid-cols-4 gap-2">
+                        {editingProduct.images?.map((img, idx) => (
+                          <div key={idx} className="relative aspect-square rounded-lg overflow-hidden group border border-zinc-200 dark:border-zinc-700">
+                            <img src={img} className="size-full object-cover" />
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => setEditingProduct({ ...editingProduct, image: img })}
+                                className="size-6 rounded-full bg-primary text-stone-950 flex items-center justify-center"
+                                title="Ana Resim Yap"
+                              >
+                                <span className="material-symbols-outlined text-xs">star</span>
+                              </button>
+                              <button
+                                onClick={() => setEditingProduct({ ...editingProduct, images: editingProduct.images?.filter((_, i) => i !== idx) })}
+                                className="size-6 rounded-full bg-red-500 text-white flex items-center justify-center"
+                                title="Sil"
+                              >
+                                <span className="material-symbols-outlined text-xs">delete</span>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        <label className="aspect-square rounded-lg border-2 border-dashed border-zinc-200 dark:border-zinc-800 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-colors group">
+                          <span className="material-symbols-outlined text-stone-300 group-hover:text-primary">add_photo_alternate</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            className="hidden"
+                            onChange={(e) => handleFileChange(e, (res) => {
+                              const newImages = Array.isArray(res) ? res : [res];
+                              setEditingProduct(prev => ({
+                                ...prev,
+                                images: [...(prev.images || []), ...newImages]
+                              }));
+                            }, true)}
+                          />
+                        </label>
                       </div>
-                      <p className="text-[9px] text-stone-400 text-center italic">Önerilen: 800x1000px JPG/PNG</p>
+
+                      <div className="pt-4">
+                        <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-2">Harici Görsel URL Ekle</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                const url = (e.target as HTMLInputElement).value;
+                                if (url) {
+                                  setEditingProduct(prev => ({ ...prev, images: [...(prev.images || []), url], image: prev.image || url }));
+                                  (e.target as HTMLInputElement).value = '';
+                                }
+                              }
+                            }}
+                            className="flex-1 bg-zinc-50 dark:bg-stone-50 border-none rounded-xl p-4 font-bold text-stone-950"
+                            placeholder="https://... + Enter"
+                          />
+                        </div>
+                      </div>
+                      <p className="text-[9px] text-stone-400 text-center italic">Birden fazla resim ekleyebilirsiniz. Yıldız butonu ile ana görseli seçebilirsiniz.</p>
                     </div>
                   </div>
                 </div>
