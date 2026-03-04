@@ -8,9 +8,10 @@ interface ShopProps {
   favorites: Product[];
   onToggleFavorite: (product: Product) => void;
   products: Product[];
+  isLoading?: boolean;
 }
 
-export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavorite, products }) => {
+export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavorite, products, isLoading }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const searchQuery = searchParams.get('q') || '';
@@ -103,7 +104,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
 
         {/* Grid */}
         <div className="flex-1">
-          {products.length === 0 ? (
+          {isLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
               {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
                 <div key={i} className="animate-pulse">

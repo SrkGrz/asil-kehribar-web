@@ -250,6 +250,7 @@ export default function App() {
 
   // Data States
   const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [slides, setSlides] = useState<Slide[]>([]);
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
@@ -258,6 +259,7 @@ export default function App() {
   // 1. AŞAMA: MongoDB Atlas tabanlı API üzerinden Veri Çekme
   useEffect(() => {
     const fetchAllData = async () => {
+      setIsLoading(true);
       try {
         const [pData, sData, bData, settsData, oData] = await Promise.all([
           fetchApi('/api/products').catch(() => null),
@@ -274,6 +276,8 @@ export default function App() {
         if (oData) setOrders(oData);
       } catch (err: any) {
         console.warn("API verileri alınamadı, lokal veriler kullanılıyor:", err.message);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -315,8 +319,8 @@ export default function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} slides={slides} />} />
-            <Route path="/shop" element={<Shop onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} />} />
-            <Route path="/product/:id" element={<ProductDetail onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} />} />
+            <Route path="/shop" element={<Shop onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
+            <Route path="/product/:id" element={<ProductDetail onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
             <Route path="/about" element={<About settings={settings} />} />
             <Route path="/blog" element={<Blog blogPosts={blogPosts} />} />
             <Route path="/contact" element={<Contact settings={settings} />} />

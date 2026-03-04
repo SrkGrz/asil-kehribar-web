@@ -8,13 +8,35 @@ interface ProductDetailProps {
   favorites: Product[];
   onToggleFavorite: (product: Product) => void;
   products: Product[];
+  isLoading?: boolean;
 }
 
-export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favorites, onToggleFavorite, products }) => {
+export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favorites, onToggleFavorite, products, isLoading }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const product = products.find(p => p.id === id);
   const isFavorite = product ? favorites.some(p => p.id === product.id) : false;
+
+  if (isLoading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12 animate-pulse">
+        <div className="h-4 bg-stone-100 dark:bg-zinc-800 w-24 mb-12 rounded"></div>
+        <div className="grid lg:grid-cols-12 gap-16">
+          <div className="lg:col-span-5 aspect-[4/5] bg-stone-100 dark:bg-zinc-800 rounded-2xl"></div>
+          <div className="lg:col-span-7 space-y-8">
+            <div className="h-10 bg-stone-100 dark:bg-zinc-800 w-3/4 rounded-xl"></div>
+            <div className="h-8 bg-stone-100 dark:bg-zinc-800 w-1/4 rounded-lg"></div>
+            <div className="space-y-4">
+              <div className="h-4 bg-stone-100 dark:bg-zinc-800 w-full rounded"></div>
+              <div className="h-4 bg-stone-100 dark:bg-zinc-800 w-full rounded"></div>
+              <div className="h-4 bg-stone-100 dark:bg-zinc-800 w-2/3 rounded"></div>
+            </div>
+            <div className="h-16 bg-stone-100 dark:bg-zinc-800 w-full rounded-2xl mt-12"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
