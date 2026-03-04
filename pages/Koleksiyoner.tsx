@@ -13,6 +13,7 @@ interface KoleksiyonerProps {
 
 export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCart, favorites, onToggleFavorite }) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const isFavorite = (id: string) => favorites.some(p => p.id === id);
     const [formData, setFormData] = useState<Partial<Product>>({
         name: '',
         price: 0,
@@ -53,9 +54,37 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
+            if (!file.type.startsWith('image/')) {
+                alert("Lütfen sadece resim dosyası seçin.");
+                return;
+            }
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, image: reader.result as string }));
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let { width, height } = img;
+                    const MAX_WIDTH = 1000;
+                    const MAX_HEIGHT = 1200;
+
+                    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                        width = width * ratio;
+                        height = height * ratio;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, width, height);
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        setFormData(prev => ({ ...prev, image: dataUrl }));
+                    } else {
+                        setFormData(prev => ({ ...prev, image: reader.result as string }));
+                    }
+                };
+                img.src = reader.result as string;
             };
             reader.readAsDataURL(file);
         }
@@ -90,34 +119,58 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
                         Her parça bir mirastır.
                     </motion.p>
 
-                    <motion.button
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.3 }}
-                        onClick={() => setIsFormOpen(true)}
-                        className="mt-12 bg-stone-950 dark:bg-primary text-white dark:text-stone-950 px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:scale-105 transition-all"
-                    >
-                        KENDİ ÜRÜNÜNÜ EKLE
-                    </motion.button>
+                    <div className="flex justify-center gap-6 mt-12">
+                        <motion.button
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.3 }}
+                            onClick={() => setIsFormOpen(true)}
+                            className="bg-primary text-stone-950 px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-2xl hover:scale-105 transition-all"
+                        >
+                            KENDİ ÜRÜNÜNÜ EKLE
+                        </motion.button>
+                        <motion.a
+                            href="#koleksiyon-baslangic"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: 0.4 }}
+                            className="bg-white/50 backdrop-blur-md border border-stone-200 text-stone-950 px-10 py-5 rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-stone-950 hover:text-white transition-all"
+                        >
+                            ESERLERİ İNCELE
+                        </motion.a>
+                    </div>
                 </div>
 
                 {/* Collector Product Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+                <div id="koleksiyon-baslangic" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
                     {collectorProducts.length > 0 ? (
                         collectorProducts.map(product => (
-                            <div key={product.id} className="group relative aspect-[4/5] overflow-hidden bg-zinc-50 dark:bg-stone-900 border border-zinc-100 dark:border-zinc-800 shadow-sm rounded-3xl transition-all hover:shadow-2xl">
+                            <div key={product.id} className="group relative aspect-[4/5] overflow-hidden bg-zinc-50 dark:bg-stone-900 border border-zinc-100 dark:border-zinc-800 shadow-sm rounded-[2.5rem] transition-all hover:shadow-2xl">
                                 <img src={product.image || undefined} className="w-full h-full object-cover grayscale-[0.2] transition-all duration-700 group-hover:scale-110 group-hover:grayscale-0" alt={product.name} />
+
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        onToggleFavorite(product);
+                                    }}
+                                    className={`absolute top-8 right-8 z-20 size-12 rounded-2xl flex items-center justify-center transition-all ${isFavorite(product.id) ? 'bg-primary text-stone-950' : 'bg-black/20 text-white backdrop-blur-xl hover:bg-white hover:text-stone-950'}`}
+                                >
+                                    <span className={`material-symbols-outlined text-2xl ${isFavorite(product.id) ? 'fill-1' : ''}`}>
+                                        favorite
+                                    </span>
+                                </button>
+
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-10 flex flex-col justify-end">
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-3">Koleksiyoner Paylaşımı</span>
-                                    <h3 className="font-display text-3xl text-white font-bold mb-4 italic">{product.name}</h3>
+                                    <h3 className="font-display text-3xl text-white font-bold mb-4 italic leading-tight">{product.name}</h3>
                                     <div className="flex items-center justify-between">
                                         <span className="text-2xl font-black text-white italic">₺{product.price.toLocaleString('tr-TR')}</span>
-                                        <button
-                                            onClick={() => onAddToCart(product)}
-                                            className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-stone-950 transition-all"
+                                        <a
+                                            href={`/product/${product.id}`}
+                                            className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-stone-950 transition-all font-black"
                                         >
                                             DETAYI GÖR
-                                        </button>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -125,7 +178,7 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
                     ) : (
                         <div className="col-span-full py-20 text-center border-2 border-dashed border-stone-200 dark:border-stone-800 rounded-[3rem]">
                             <span className="material-symbols-outlined text-6xl text-stone-300 mb-6">inventory_2</span>
-                            <p className="text-stone-400 font-medium italic">Henüz koleksiyonerler tarafınan eklenen eser bulunmuyor.</p>
+                            <p className="text-stone-400 font-medium italic">Henüz koleksiyonerler tarafından eklenen eser bulunmuyor.</p>
                         </div>
                     )}
                 </div>

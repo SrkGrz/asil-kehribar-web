@@ -20,10 +20,12 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
 
   const filteredProducts = products
     .filter(p => {
-      const matchesType = activeType === 'Tümü' || p.type === activeType;
+      const matchesType = activeType === 'Tümü'
+        ? p.type !== 'Koleksiyoner Ürünü'
+        : p.type === activeType;
       const matchesSearch = !searchQuery ||
         p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.specs.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.specs && p.specs.toLowerCase().includes(searchQuery.toLowerCase())) ||
         p.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesType && matchesSearch;
     })
