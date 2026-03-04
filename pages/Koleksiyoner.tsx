@@ -263,18 +263,28 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
                                                 />
                                             </div>
 
-                                            <div className="space-y-2">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">GÖRSEL</label>
-                                                <div className="flex items-center gap-4">
-                                                    <label className="flex-grow cursor-pointer bg-stone-50 dark:bg-stone-800 border-2 border-dashed border-stone-200 dark:border-stone-700 rounded-2xl p-8 hover:border-primary transition-all flex flex-col items-center gap-2">
-                                                        <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
-                                                        <span className="material-symbols-outlined text-stone-300">add_photo_alternate</span>
-                                                        <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest">RESİM SEÇ</span>
+                                            <div className="space-y-4">
+                                                <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 ml-2">GÖRSELLER</label>
+                                                <div className="grid grid-cols-3 md:grid-cols-4 gap-4">
+                                                    {formData.images?.map((img, idx) => (
+                                                        <div key={idx} className="relative aspect-square rounded-2xl overflow-hidden group">
+                                                            <img src={img} className="size-full object-cover" />
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setFormData(prev => ({ ...prev, images: prev.images?.filter((_, i) => i !== idx) }))}
+                                                                className="absolute inset-0 bg-red-500/80 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                                                            >
+                                                                <span className="material-symbols-outlined">delete</span>
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    <label className="aspect-square rounded-2xl border-2 border-dashed border-stone-200 dark:border-stone-700 flex flex-col items-center justify-center cursor-pointer hover:border-primary transition-all group bg-stone-50 dark:bg-stone-800/50">
+                                                        <span className="material-symbols-outlined text-stone-300 group-hover:text-primary">add_photo_alternate</span>
+                                                        <span className="text-[10px] font-black text-stone-400 mt-1 uppercase tracking-widest">EKLE</span>
+                                                        <input type="file" multiple accept="image/*" onChange={handleFileChange} className="hidden" />
                                                     </label>
-                                                    {formData.image && (
-                                                        <img src={formData.image} className="size-24 rounded-2xl object-cover shadow-lg" alt="Preview" />
-                                                    )}
                                                 </div>
+                                                <p className="text-[10px] text-stone-400 italic ml-2">Birden fazla resim seçebilirsiniz. İlk resim vitrin görseli olur.</p>
                                             </div>
 
                                             <button
