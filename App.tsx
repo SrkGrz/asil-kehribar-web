@@ -267,9 +267,9 @@ export default function App() {
           fetchApi('/api/orders').catch(() => null)
         ]);
 
-        if (pData && pData.length > 0) setProducts(pData);
-        if (sData && sData.length > 0) setSlides(sData.sort((a: any, b: any) => (a.id > b.id ? 1 : -1)));
-        if (bData && bData.length > 0) setBlogPosts(bData);
+        if (pData) setProducts(pData);
+        if (sData) setSlides(sData.sort((a: any, b: any) => (a.id > b.id ? 1 : -1)));
+        if (bData) setBlogPosts(bData);
         if (settsData) setSettings(settsData);
         if (oData) setOrders(oData);
       } catch (err: any) {
