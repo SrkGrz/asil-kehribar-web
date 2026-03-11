@@ -11,20 +11,19 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
   const title = settings.aboutTitle || 'Gerçek Kehribar<br/>Zarafeti';
   const text1 = settings.aboutText1 || 'Asil Kehribar, yüzyıllık usta geleneğini modern koleksiyonculukla buluşturan bir kavram. Her bir tane, Baltık Denizi\'nin kadim katmanlarından gelen saf hammaddeden, usta ellerin sabırlı işçiliğiyle şekillenir.';
   const text2 = settings.aboutText2 || 'Fabrikasyon ürünlerin kitlesel dünyasında biz farklı bir yol seçtik: hakikatin, özün ve kalıcılığın peşinde. Koleksiyonumuzdaki her eser, analiz edilmiş, sertifikalandırılmış ve size özel hazırlanmıştır.';
-  const years = settings.aboutYears || '15+';
-  const customers = settings.aboutCustomers || '2.000+';
+
 
   return (
     <div className="space-y-0 pb-32">
 
       {/* ─── HERO ─── */}
       <section className="px-4 md:px-8 mt-8">
-        <div className="relative py-32 w-full max-w-[1400px] mx-auto flex items-center justify-center bg-stone-950 border border-zinc-800 shadow-sm text-center">
+        <div className="relative py-32 w-full max-w-[1400px] mx-auto flex items-center justify-center bg-stone-50 border border-zinc-200 shadow-sm text-center">
           <div className="relative z-10 max-w-4xl mx-auto px-4 w-full">
             <span className="text-primary font-black uppercase tracking-[0.5em] text-[10px] mb-6 block">
               Koleksiyoncu Arşivi · Kuruluş 2009
             </span>
-            <h1 className="text-5xl md:text-8xl lg:text-9xl font-display font-black text-white italic leading-tight tracking-tight">
+            <h1 className="text-5xl md:text-8xl lg:text-9xl font-display font-black text-stone-950 italic leading-tight tracking-tight">
               Asil Bir <br />Tutkunun <br />
               <span className="text-primary">Hikayesi.</span>
             </h1>
@@ -32,26 +31,6 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
         </div>
       </section>
 
-      {/* ─── STATS ─── */}
-      <section className="px-4 md:px-8">
-        <div className="w-full max-w-[1400px] mx-auto bg-stone-950 border border-zinc-800 border-t-0 py-10">
-          <div className="max-w-7xl mx-auto px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { value: years, label: 'Yıllık Tecrübe' },
-                { value: customers, label: 'Asil Koleksiyoncu' },
-                { value: '100%', label: 'Orijinal & Sertifikalı' },
-                { value: '7/24', label: 'Koleksiyoncu Desteği' },
-              ].map((s, i) => (
-                <div key={i}>
-                  <p className="text-4xl md:text-5xl font-display font-black italic text-primary mb-2">{s.value}</p>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* ─── HIKAYE ─── */}
       <section className="max-w-4xl mx-auto px-4 py-32 text-center">
@@ -64,16 +43,6 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
           <div className="space-y-6 text-stone-600 dark:text-stone-400 leading-relaxed text-lg font-medium">
             <p>{text1}</p>
             <p>{text2}</p>
-          </div>
-          <div className="pt-12 border-t border-zinc-100 dark:border-zinc-800 flex justify-center gap-16">
-            <div>
-              <p className="text-4xl font-black italic font-display text-primary">{years}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mt-2">Yıllık Tecrübe</p>
-            </div>
-            <div>
-              <p className="text-4xl font-black italic font-display text-primary">{customers}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mt-2">Asil Koleksiyoncu</p>
-            </div>
           </div>
         </div>
       </section>
@@ -125,18 +94,18 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="bg-stone-950 py-24">
+      <section className="bg-stone-50 py-24 mb-16 rounded-3xl mx-4 md:mx-8 border border-zinc-200">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <span className="material-symbols-outlined text-primary text-5xl mb-6 block">military_tech</span>
-          <h2 className="text-4xl md:text-6xl font-display font-black italic text-white mb-6">
+          <h2 className="text-4xl md:text-6xl font-display font-black italic text-stone-950 mb-6">
             Asil Koleksiyonu <br />Keşfedin
           </h2>
-          <p className="text-stone-400 text-lg mb-10 max-w-xl mx-auto">
+          <p className="text-stone-600 text-lg mb-10 max-w-xl mx-auto">
             Yüzyıllık usta geleneği ile buluşan nadir kehribar eserleri sizi bekliyor.
           </p>
           <a
             href="#/shop"
-            className="inline-block bg-primary text-stone-950 font-black uppercase tracking-widest px-12 py-5 hover:bg-white transition-colors"
+            className="inline-block bg-primary text-stone-950 font-black uppercase tracking-widest px-12 py-5 hover:bg-stone-950 hover:text-white transition-colors rounded-xl"
           >
             KOLEKSİYONU GÖR
           </a>
