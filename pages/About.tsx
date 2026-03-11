@@ -6,13 +6,8 @@ interface AboutProps {
   settings: SiteSettings;
 }
 
-const HERO_IMAGE = 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab12?w=1600&q=80';
-const CONTENT_IMAGE = 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=900&q=80';
-const TEAM_IMAGE = 'https://images.unsplash.com/photo-1607503873903-c5e95f80d7b9?w=900&q=80';
 
 export const About: React.FC<AboutProps> = ({ settings }) => {
-  const heroImage = settings.aboutHeroImage || HERO_IMAGE;
-  const contentImage = settings.aboutContentImage || CONTENT_IMAGE;
   const title = settings.aboutTitle || 'Gerçek Kehribar<br/>Zarafeti';
   const text1 = settings.aboutText1 || 'Asil Kehribar, yüzyıllık usta geleneğini modern koleksiyonculukla buluşturan bir kavram. Her bir tane, Baltık Denizi\'nin kadim katmanlarından gelen saf hammaddeden, usta ellerin sabırlı işçiliğiyle şekillenir.';
   const text2 = settings.aboutText2 || 'Fabrikasyon ürünlerin kitlesel dünyasında biz farklı bir yol seçtik: hakikatin, özün ve kalıcılığın peşinde. Koleksiyonumuzdaki her eser, analiz edilmiş, sertifikalandırılmış ve size özel hazırlanmıştır.';
@@ -24,18 +19,12 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
 
       {/* ─── HERO ─── */}
       <section className="px-4 md:px-8 mt-8">
-        <div className="relative h-[75vh] w-full max-w-[1400px] mx-auto flex items-end overflow-hidden bg-stone-50 border border-zinc-100 dark:border-zinc-800 shadow-sm">
-          <img
-            src={heroImage}
-            className="absolute inset-0 size-full object-cover"
-            alt="Asil Kehribar - Hakkımızda"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
-          <div className="relative z-10 max-w-7xl mx-auto px-4 w-full pb-20">
+        <div className="relative py-32 w-full max-w-[1400px] mx-auto flex items-center justify-center bg-stone-950 border border-zinc-800 shadow-sm text-center">
+          <div className="relative z-10 max-w-4xl mx-auto px-4 w-full">
             <span className="text-primary font-black uppercase tracking-[0.5em] text-[10px] mb-6 block">
               Koleksiyoncu Arşivi · Kuruluş 2009
             </span>
-            <h1 className="text-5xl md:text-8xl lg:text-9xl font-display font-black text-white italic leading-none max-w-4xl tracking-tight">
+            <h1 className="text-5xl md:text-8xl lg:text-9xl font-display font-black text-white italic leading-tight tracking-tight">
               Asil Bir <br />Tutkunun <br />
               <span className="text-primary">Hikayesi.</span>
             </h1>
@@ -65,43 +54,25 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
       </section>
 
       {/* ─── HIKAYE ─── */}
-      <section className="max-w-7xl mx-auto px-4 py-32">
-        <div className="grid lg:grid-cols-2 gap-24 items-center">
-          <div className="space-y-10">
-            <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px]">Hikayemiz</span>
-            <h2
-              className="text-4xl md:text-6xl font-display font-black italic text-stone-950 dark:text-white leading-tight"
-              dangerouslySetInnerHTML={{ __html: title }}
-            />
-            <div className="space-y-6 text-stone-600 dark:text-stone-400 leading-relaxed text-lg font-medium">
-              <p>{text1}</p>
-              <p>{text2}</p>
-            </div>
-            <div className="pt-8 border-t border-zinc-100 dark:border-zinc-800 flex gap-12">
-              <div>
-                <p className="text-3xl font-black italic font-display text-primary">{years}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mt-2">Yıllık Tecrübe</p>
-              </div>
-              <div>
-                <p className="text-3xl font-black italic font-display text-primary">{customers}</p>
-                <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mt-2">Asil Koleksiyoncu</p>
-              </div>
-            </div>
+      <section className="max-w-4xl mx-auto px-4 py-32 text-center">
+        <div className="space-y-10">
+          <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px]">Hikayemiz</span>
+          <h2
+            className="text-4xl md:text-6xl font-display font-black italic text-stone-950 dark:text-white leading-tight"
+            dangerouslySetInnerHTML={{ __html: title }}
+          />
+          <div className="space-y-6 text-stone-600 dark:text-stone-400 leading-relaxed text-lg font-medium">
+            <p>{text1}</p>
+            <p>{text2}</p>
           </div>
-
-          <div className="relative group">
-            <div className="h-[75vh] overflow-hidden shadow-2xl border border-zinc-200 dark:border-zinc-800">
-              <img
-                src={contentImage}
-                referrerPolicy="no-referrer"
-                className="size-full object-cover transition-all duration-700 group-hover:scale-105"
-                alt="Kehribar İşçiliği"
-              />
+          <div className="pt-12 border-t border-zinc-100 dark:border-zinc-800 flex justify-center gap-16">
+            <div>
+              <p className="text-4xl font-black italic font-display text-primary">{years}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mt-2">Yıllık Tecrübe</p>
             </div>
-            <div className="absolute -bottom-10 -right-10 bg-white dark:bg-stone-900 p-8 hidden xl:block shadow-2xl border border-primary/20">
-              <span className="material-symbols-outlined text-primary text-4xl mb-4 block">workspace_premium</span>
-              <p className="text-stone-950 dark:text-white font-display text-xl font-black italic leading-tight mb-1">Asil Mühürlü</p>
-              <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">Sadece En Saf Kehribar.</p>
+            <div>
+              <p className="text-4xl font-black italic font-display text-primary">{customers}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-stone-400 mt-2">Asil Koleksiyoncu</p>
             </div>
           </div>
         </div>

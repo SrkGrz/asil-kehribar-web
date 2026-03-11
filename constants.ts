@@ -96,8 +96,6 @@ export const DEFAULT_SETTINGS: SiteSettings = {
   phone: '+90 (212) 555 0123',
   address: 'Kapalıçarşı, Kalpakçılar Cd. No:42, Fatih, İstanbul',
   instagram: 'https://instagram.com/asilkehribar',
-  aboutHeroImage: 'https://images.unsplash.com/photo-1574347715003-89689f506259?q=80&w=1974&auto=format&fit=crop',
-  aboutContentImage: 'https://images.unsplash.com/photo-1588600129881-c7207aa22aa3?q=80&w=2070&auto=format&fit=crop',
   aboutTitle: 'Zamana Yenilmeyen <br/> Bir Asalet.',
   aboutText1: 'Asil Kehribar, sadece bir tesbih mağazası değil; milyonlarca yıllık doğal sürecin, insan zekası ve emeğiyle buluştuğu bir sanat durağıdır. Biz, Baltık ormanlarının gözyaşları olarak anılan kehribarı, en saf ve asil haliyle bulup sizlere sunmak için yola çıktık.',
   aboutText2: 'Temel amacımız, tesbih kültürünü sadece bir aksesuar olmaktan çıkarıp, kuşaktan kuşağa aktarılacak, yatırım değeri taşıyan asil bir miras haline getirmektir. Her bir eserimiz, usta sanatçılarımızın torna tezgahlarında binlerce kez dokunularak şekil alır.',

@@ -34,8 +34,6 @@ export interface SiteSettings {
   phone: string;
   address: string;
   instagram: string;
-  aboutHeroImage: string;
-  aboutContentImage: string;
   aboutTitle: string;
   aboutText1: string;
   aboutText2: string;

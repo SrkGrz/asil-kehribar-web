@@ -12,7 +12,12 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Support base64 image uploads
 
 const JWT_SECRET = process.env.JWT_SECRET || 'asil-kehribar-super-secret-key-2026';
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb+srv://Vercel-Admin-atlas-lime-anchor:L6LMwINSZl1UisUB@atlas-lime-anchor.kykuquw.mongodb.net/asil-kehribar?retryWrites=true&w=majority";
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+    console.error('❌ MONGODB_URI environment variable is not set. Please set it in your .env file or environment.');
+    process.exit(1);
+}
 
 // Connect to MongoDB Atlas
 const clientOptions = { serverApi: { version: '1', strict: true, deprecationErrors: true } };
@@ -155,7 +160,7 @@ app.post('/api/auth/login', async (req, res) => {
         if (usersCount === 0) {
             const hash = await bcrypt.hash(password, 10);
             user = await User.create({ id: Date.now().toString(), email, password: hash, role: 'admin' });
-            const token = jwt.sign({ id: user.id, email, role: user.role, status: user.status }, JWT_SECRET);
+            const token = jwt.sign({ id: user.id, email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1d' });
             return res.json({ token, user: { id: user.id, email, role: user.role } });
         }
 
@@ -166,7 +171,7 @@ app.post('/api/auth/login', async (req, res) => {
             return res.status(403).json({ error: 'Hesabınız yöneticiler tarafından engellenmiştir.' });
         }
 
-        const token = jwt.sign({ id: user.id, email: user.email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1m' });
+        const token = jwt.sign({ id: user.id, email: user.email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1d' });
         res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
     } catch (err) {
         res.status(500).json({ error: err.message });

@@ -1,10 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
-import { GoogleGenAI } from "@google/genai";
 import { fetchApi } from '../api';
 import { Product, Slide, SiteSettings, BlogPost, Order } from '../types';
-type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'import' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
+type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
 
 const DEFAULT_PASSWORD = "admin";
 
@@ -192,11 +191,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     stock: 0
   });
 
-  // Smart Import States
-  const [importUrl, setImportUrl] = useState('');
-  const [isImporting, setIsImporting] = useState(false);
-  const [importedProduct, setImportedProduct] = useState<Partial<Product> | null>(null);
-
   // XML Integration States
   const [xmlUrl, setXmlUrl] = useState('');
   const [xmlStatus, setXmlStatus] = useState<'idle' | 'testing' | 'active'>('idle');
@@ -265,45 +259,60 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setEditingBlogPost(post);
     setIsEditingBlog(true);
   };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, callback: (base64: string) => void) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        alert("Lütfen sadece resim/görsel dosyası yükleyin.");
-        e.target.value = '';
-        return;
-      }
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let { width, height } = img;
-          const MAX_WIDTH = 1200;
-          const MAX_HEIGHT = 1600;
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, callback: (result: string | string[]) => void, isMultiple: boolean = false) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
 
-          if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-            const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-            width = width * ratio;
-            height = height * ratio;
-          }
+    const processFile = (file: File): Promise<string> => {
+      return new Promise((resolve) => {
+        if (!file.type.startsWith('image/')) {
+          alert(`Geçersiz dosya: ${file.name}. Lütfen sadece resim yükleyin.`);
+          resolve('');
+          return;
+        }
 
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.drawImage(img, 0, 0, width, height);
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-            callback(dataUrl);
-          } else {
-            callback(reader.result as string);
-          }
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 1600;
+
+            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+              const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+              width = width * ratio;
+              height = height * ratio;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(img, 0, 0, width, height);
+              resolve(canvas.toDataURL('image/jpeg', 0.82));
+            } else {
+              resolve(reader.result as string);
+            }
+          };
+          img.src = reader.result as string;
         };
-        img.src = reader.result as string;
-      };
-      reader.readAsDataURL(file);
-      e.target.value = '';
+        reader.readAsDataURL(file);
+      });
+    };
+
+    if (isMultiple) {
+      Promise.all(Array.from(files).map(processFile)).then((results) => {
+        const validResults = results.filter(r => r !== '');
+        if (validResults.length > 0) callback(validResults);
+      });
+    } else {
+      processFile(files[0]).then((result) => {
+        if (result) callback(result);
+      });
     }
+    e.target.value = '';
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -340,47 +349,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
       setPassChange({ current: '', new: '', confirm: '' });
     } catch (err: any) {
       setError('Şifre güncellenemedi: ' + err.message);
-    }
-  };
-
-  const handleSmartImport = async () => {
-    if (!importUrl.trim()) return;
-    setIsImporting(true);
-    setImportedProduct(null);
-
-    try {
-      const apiKey = process.env.API_KEY || localStorage.getItem('asil_gemini_api_key');
-      if (!apiKey) {
-        throw new Error("Lütfen API Anahtarınızı (.env doyanıza API_KEY olarak veya ayarlara) ekleyiniz.");
-      }
-
-      const ai = new GoogleGenAI({ apiKey: apiKey });
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: `Bu URL'deki ürünü incele ve mağaza için uygun bir JSON döndür: ${importUrl}. Sadece JSON döndür. 
-        Format: { "name": "ürün adı", "price": "1250 (sadece sayı)", "description": "kısa açıklama", "longDescription": "detaylı hikaye", "specs": "9x12mm • Gümüş", "image": "ana görsel URL'si" }
-        Tür (type) olarak şunlardan birini seç: "Damla (Baltık)", "Sıkma Kehribar", "Ateş Kehribar", "Osmanlı Tarzı".`,
-        config: {
-          tools: [{ googleSearch: {} }],
-          responseMimeType: "application/json",
-        },
-      });
-
-      const text = response.text || '{}';
-      const cleanJson = text.replace(/```json/g, '').replace(/```/g, ''); // Temizlik önlemi
-      const data = JSON.parse(cleanJson);
-
-      setImportedProduct({
-        ...data,
-        id: Math.random().toString(36).substr(2, 9),
-        price: Number(data.price) || 0,
-        type: data.type || ''
-      });
-    } catch (error: any) {
-      console.error("İçe aktarma hatası:", error);
-      alert(`Hata: ${error.message || "Ürün bilgileri çekilemedi."}\nEğer API Key girmediyseniz çalışmayabilir.`);
-    } finally {
-      setIsImporting(false);
     }
   };
 
@@ -612,15 +580,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
 
               {/* Quick Actions */}
               <div className="lg:col-span-4 space-y-6">
-                <div className="bg-stone-900 dark:bg-zinc-900 p-8 rounded-3xl text-white shadow-xl relative overflow-hidden group">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
-                    <span className="material-symbols-outlined text-[120px]">auto_fix_high</span>
-                  </div>
-                  <h3 className="text-xl font-black italic mb-4 relative z-10">Akıllı Yönetim</h3>
-                  <p className="text-sm text-stone-400 mb-8 relative z-10 leading-relaxed">Yapay zeka asistanı ile envanterinizi saniyeler içinde zenginleştirin.</p>
-                  <button onClick={() => setActiveView('import')} className="w-full bg-primary text-stone-950 py-4 rounded-xl font-black text-xs uppercase tracking-widest relative z-10 hover:scale-105 transition-all">İÇE AKTARMA BAŞLAT</button>
-                </div>
-
                 <div className="bg-white dark:bg-stone-950 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                   <h3 className="text-xs font-black uppercase text-stone-400 mb-6 tracking-widest">Hızlı Erişim</h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -770,7 +729,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            onChange={(e) => handleFileChange(e, (res) => setEditingProduct({ ...editingProduct, image: res as string }))}
+                            onChange={(e) => handleFileChange(e, (res) => setEditingProduct({ ...editingProduct, image: Array.isArray(res) ? res[0] : res }))}
                           />
                         </label>
                       </div>
@@ -809,7 +768,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                               const newImages = Array.isArray(res) ? res : [res];
                               setEditingProduct(prev => ({
                                 ...prev,
-                                images: [...(prev.images || []), ...newImages]
+                                images: [...(prev.images || []), ...newImages].filter(Boolean)
                               }));
                             }, true)}
                           />
@@ -974,82 +933,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
-        );
-
-      case 'import':
-        return (
-          <div className="max-w-5xl mx-auto">
-            <div className="mb-12">
-              <h1 className="text-4xl font-display font-black italic mb-2">Akıllı İçe Aktarma</h1>
-              <p className="text-stone-500">Dış dünyadaki bir eseri saraya dahil etmek için URL'sini yapıştırın.</p>
-            </div>
-
-            <div className="bg-white dark:bg-stone-950 p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-xl">
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">link</span>
-                  <input
-                    type="text"
-                    value={importUrl}
-                    onChange={(e) => setImportUrl(e.target.value)}
-                    className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl py-5 pl-12 pr-4 font-medium focus:ring-2 focus:ring-primary transition-all"
-                    placeholder="Ürün sayfasının linkini buraya yapıştırın..."
-                  />
-                </div>
-                <button
-                  onClick={handleSmartImport}
-                  disabled={isImporting}
-                  className="bg-stone-950 dark:bg-primary text-white dark:text-stone-950 px-8 py-5 rounded-2xl font-black flex items-center justify-center gap-3 hover:scale-105 transition-all disabled:opacity-50"
-                >
-                  {isImporting ? (
-                    <div className="size-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  ) : (
-                    <span className="material-symbols-outlined">auto_fix_high</span>
-                  )}
-                  ANALİZ ET
-                </button>
-              </div>
-
-              {importedProduct && (
-                <div className="mt-12 animate-in fade-in slide-in-from-top-4 duration-500">
-                  <div className="flex items-center gap-2 mb-6 text-primary">
-                    <span className="material-symbols-outlined">check_circle</span>
-                    <span className="font-black uppercase tracking-widest text-xs">Eser Analiz Edildi</span>
-                  </div>
-
-                  <div className="grid lg:grid-cols-2 gap-10 p-6 bg-zinc-50 dark:bg-zinc-800/50 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-700">
-                    <div className="aspect-[4/5] rounded-xl overflow-hidden bg-zinc-200 dark:bg-zinc-700">
-                      <img src={importedProduct.image || undefined} className="size-full object-cover" alt="Imported" />
-                    </div>
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        value={importedProduct.name || ''}
-                        onChange={(e) => setImportedProduct({ ...importedProduct, name: e.target.value })}
-                        className="w-full bg-transparent border-0 border-b border-zinc-300 dark:border-zinc-600 focus:ring-0 text-2xl font-display font-black italic p-0"
-                      />
-                      <div className="flex items-center gap-2 text-primary font-black text-xl italic">
-                        ₺ <input
-                          type="number"
-                          value={importedProduct.price || 0}
-                          onChange={(e) => setImportedProduct({ ...importedProduct, price: Number(e.target.value) })}
-                          className="bg-transparent border-0 p-0 w-32 focus:ring-0"
-                        />
-                      </div>
-                      {importedProduct.specs && <p className="text-sm text-stone-500">{importedProduct.specs}</p>}
-                      <textarea
-                        value={importedProduct.description || ''}
-                        onChange={(e) => setImportedProduct({ ...importedProduct, description: e.target.value })}
-                        className="w-full bg-transparent border-0 text-sm leading-relaxed p-0 focus:ring-0 resize-none"
-                        rows={3}
-                      />
-                      <button className="w-full mt-4 bg-primary text-stone-950 font-black py-4 rounded-xl shadow-lg shadow-primary/20">SARAY KOLEKSİYONUNA EKLE</button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         );
@@ -1431,57 +1314,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                   </div>
                 </div>
               </section>
-
-              <section className="bg-white dark:bg-stone-950 p-10 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h2 className="text-xl font-black italic mb-10 flex items-center gap-4">
-                  <span className="material-symbols-outlined text-primary">image</span>
-                  Görseller
-                </h2>
-                <div className="grid md:grid-cols-2 gap-10">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Hero Görseli (En Üst)</label>
-                    {settings.aboutHeroImage && (
-                      <img src={settings.aboutHeroImage} className="w-full h-40 object-cover mb-4 border border-zinc-200 dark:border-zinc-700" alt="Hero önizleme" />
-                    )}
-                    <div className="flex flex-col gap-3">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, (base64) => setSettings({ ...settings, aboutHeroImage: base64 }))}
-                        className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold text-xs"
-                        placeholder="Veya URL girin..."
-                        value={settings.aboutHeroImage}
-                        onChange={(e) => setSettings({ ...settings, aboutHeroImage: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">İçerik Görseli (Hikayemiz)</label>
-                    {settings.aboutContentImage && (
-                      <img src={settings.aboutContentImage} className="w-full h-40 object-cover mb-4 border border-zinc-200 dark:border-zinc-700" alt="İçerik önizleme" />
-                    )}
-                    <div className="flex flex-col gap-3">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleFileChange(e, (base64) => setSettings({ ...settings, aboutContentImage: base64 }))}
-                        className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold text-xs"
-                        placeholder="Veya URL girin..."
-                        value={settings.aboutContentImage}
-                        onChange={(e) => setSettings({ ...settings, aboutContentImage: e.target.value })}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </section>
             </div>
           </div>
         );
@@ -1555,30 +1387,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 </div>
               </section>
 
-              {/* API and Integration Settings */}
-              <section className="bg-white dark:bg-stone-950 p-10 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h2 className="text-xl font-black italic mb-10 flex items-center gap-4">
-                  <span className="material-symbols-outlined text-primary">api</span>
-                  Yapay Zeka (AI) Bağlantısı
-                </h2>
-                <div className="grid gap-10">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-stone-500 mb-3">Google Gemini API Anahtarı</label>
-                    <input
-                      type="password"
-                      className="w-full bg-zinc-50 dark:bg-zinc-800 border-none rounded-2xl p-4 font-bold"
-                      placeholder="AI-..."
-                      value={localStorage.getItem('asil_gemini_api_key') || ''}
-                      onChange={(e) => {
-                        localStorage.setItem('asil_gemini_api_key', e.target.value);
-                        setSettings({ ...settings });
-                      }}
-                    />
-                    <p className="text-[10px] font-bold text-stone-400 mt-3">Akıllı "İçe Aktar (AI)" özelliğini kullanabilmek için bu alanın dolu olması gereklidir. API anahtarlarına Google AI Studio üzerinden erişebilirsiniz.</p>
-                  </div>
-                </div>
-              </section>
-
               {/* Password Change Section */}
               <section className="bg-white dark:bg-stone-950 p-10 rounded-3xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
                 <h2 className="text-xl font-black italic mb-10 flex items-center gap-4">
@@ -1626,7 +1434,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                 </form>
               </section>
             </div>
-          </div>
+          </div >
         );
 
       case 'slides':
@@ -1689,7 +1497,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleFileChange(e, (base64) => setEditingSlide({ ...editingSlide, image: base64 }))}
+                        onChange={(e) => handleFileChange(e, (res) => setEditingSlide({ ...editingSlide, image: Array.isArray(res) ? res[0] : res }))}
                         className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
                       />
                       <div className="flex items-center gap-2">
@@ -1840,7 +1648,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       <input
                         type="file"
                         accept="image/*"
-                        onChange={(e) => handleFileChange(e, (base64) => setEditingBlogPost({ ...editingBlogPost, image: base64 }))}
+                        onChange={(e) => handleFileChange(e, (res) => setEditingBlogPost({ ...editingBlogPost, image: Array.isArray(res) ? res[0] : res }))}
                         className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-black file:bg-primary file:text-stone-950 hover:file:bg-stone-950 hover:file:text-white cursor-pointer"
                       />
                       <div className="flex items-center gap-2">
@@ -2007,7 +1815,6 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
             { id: 'dashboard', icon: 'dashboard', label: 'Dashboard' },
             { id: 'slides', icon: 'photo_library', label: 'Vitrin (Hero)' },
             { id: 'products', icon: 'inventory_2', label: 'Koleksiyon' },
-            { id: 'import', icon: 'auto_fix_high', label: 'İçe Aktar (AI)' },
             { id: 'blog', icon: 'article', label: 'Blog' },
             { id: 'integrations', icon: 'hub', label: 'Entegrasyonlar' },
             { id: 'orders', icon: 'shopping_cart', label: 'Siparişler' },
