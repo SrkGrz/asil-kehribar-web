@@ -9,6 +9,8 @@ interface AboutProps {
 
 export const About: React.FC<AboutProps> = ({ settings }) => {
   const title = settings.aboutTitle || 'Gerçek Kehribar<br/>Zarafeti';
+  // Only line breaks are honoured; the rest is rendered as text to avoid HTML injection
+  const titleLines = title.split(/<br\s*\/?>/i);
   const text1 = settings.aboutText1 || 'Asil Kehribar, yüzyıllık usta geleneğini modern koleksiyonculukla buluşturan bir kavram. Her bir tane, Baltık Denizi\'nin kadim katmanlarından gelen saf hammaddeden, usta ellerin sabırlı işçiliğiyle şekillenir.';
   const text2 = settings.aboutText2 || 'Fabrikasyon ürünlerin kitlesel dünyasında biz farklı bir yol seçtik: hakikatin, özün ve kalıcılığın peşinde. Koleksiyonumuzdaki her eser, analiz edilmiş, sertifikalandırılmış ve size özel hazırlanmıştır.';
 
@@ -36,10 +38,14 @@ export const About: React.FC<AboutProps> = ({ settings }) => {
       <section className="max-w-4xl mx-auto px-4 py-32 text-center">
         <div className="space-y-10">
           <span className="text-primary font-black uppercase tracking-[0.4em] text-[10px]">Hikayemiz</span>
-          <h2
-            className="text-4xl md:text-6xl font-display font-black italic text-stone-950 dark:text-white leading-tight"
-            dangerouslySetInnerHTML={{ __html: title }}
-          />
+          <h2 className="text-4xl md:text-6xl font-display font-black italic text-stone-950 dark:text-white leading-tight">
+            {titleLines.map((line, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <br />}
+                {line}
+              </React.Fragment>
+            ))}
+          </h2>
           <div className="space-y-6 text-stone-600 dark:text-stone-400 leading-relaxed text-lg font-medium">
             <p>{text1}</p>
             <p>{text2}</p>
