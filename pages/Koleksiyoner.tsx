@@ -4,6 +4,11 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product } from '../types';
 import { fetchApi } from '../api';
+import { FavoriteButton } from '../components/FavoriteButton';
+import { formatPrice } from '../utils/format';
+import { generateId } from '../utils/id';
+import { resizeImageFiles } from '../utils/image';
+import { isProductFavorite } from '../utils/favorites';
 
 interface KoleksiyonerProps {
     products: Product[];
@@ -14,7 +19,7 @@ interface KoleksiyonerProps {
 
 export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCart, favorites, onToggleFavorite }) => {
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const isFavorite = (id: string) => favorites.some(p => p.id === id);
+    const isFavorite = (id: string) => isProductFavorite(favorites, id);
     const [formData, setFormData] = useState<Partial<Product>>({
         name: '',
         price: 0,
@@ -35,7 +40,7 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const id = Math.random().toString(36).substr(2, 9);
+            const id = generateId();
             const newProduct = { ...formData, id } as Product;
             await fetchApi('/api/products', { method: 'POST', body: JSON.stringify(newProduct) });
             setSuccessMessage('Ürününüz başarıyla incelenmek üzere gönderildi!');
@@ -52,53 +57,18 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
         }
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (files) {
-            const newImages: string[] = [];
-            let processedCount = 0;
+        if (!files) return;
 
-            Array.from(files).forEach(file => {
-                if (!file.type.startsWith('image/')) return;
+        const newImages = await resizeImageFiles(files, { maxWidth: 1000, maxHeight: 1200, quality: 0.85 });
+        if (newImages.length === 0) return;
 
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let { width, height } = img;
-                        const MAX_WIDTH = 1000;
-                        const MAX_HEIGHT = 1200;
-
-                        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                            const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-                            width = width * ratio;
-                            height = height * ratio;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                            ctx.drawImage(img, 0, 0, width, height);
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                            newImages.push(dataUrl);
-                        }
-
-                        processedCount++;
-                        if (processedCount === Array.from(files).filter(f => f.type.startsWith('image/')).length) {
-                            setFormData(prev => ({
-                                ...prev,
-                                images: [...(prev.images || []), ...newImages],
-                                image: prev.image || newImages[0] // Set first image as main if none exists
-                            }));
-                        }
-                    };
-                    img.src = reader.result as string;
-                };
-                reader.readAsDataURL(file);
-            });
-        }
+        setFormData(prev => ({
+            ...prev,
+            images: [...(prev.images || []), ...newImages],
+            image: prev.image || newImages[0] // Set first image as main if none exists
+        }));
     };
 
     return (
@@ -159,23 +129,17 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
                             <div key={product.id} className="group relative aspect-[4/5] overflow-hidden bg-zinc-50 dark:bg-stone-900 border border-zinc-100 dark:border-zinc-800 shadow-sm rounded-[2.5rem] transition-all hover:shadow-2xl">
                                 <img src={product.image || undefined} className="w-full h-full object-cover grayscale-[0.2] transition-all duration-700 group-hover:scale-110 group-hover:grayscale-0" alt={product.name} />
 
-                                <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        onToggleFavorite(product);
-                                    }}
-                                    className={`absolute top-8 right-8 z-20 size-12 rounded-2xl flex items-center justify-center transition-all ${isFavorite(product.id) ? 'bg-primary text-stone-950' : 'bg-black/20 text-white backdrop-blur-xl hover:bg-white hover:text-stone-950'}`}
-                                >
-                                    <span className={`material-symbols-outlined text-2xl ${isFavorite(product.id) ? 'fill-1' : ''}`}>
-                                        favorite
-                                    </span>
-                                </button>
+                                <FavoriteButton
+                                    variant="overlay"
+                                    isFavorite={isFavorite(product.id)}
+                                    onToggle={() => onToggleFavorite(product)}
+                                />
 
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-10 flex flex-col justify-end">
                                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-3">Koleksiyoner Paylaşımı</span>
                                     <h3 className="font-display text-3xl text-white font-bold mb-4 italic leading-tight">{product.name}</h3>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-2xl font-black text-white italic">₺{product.price.toLocaleString('tr-TR')}</span>
+                                        <span className="text-2xl font-black text-white italic">{formatPrice(product.price)}</span>
                                         <Link
                                             to={`/product/${product.id}`}
                                             className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-white hover:text-stone-950 transition-all font-black text-center"

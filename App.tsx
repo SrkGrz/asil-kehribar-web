@@ -16,6 +16,22 @@ import { Koleksiyoner } from './pages/Koleksiyoner';
 import { CartItem, Product, Slide, SiteSettings, BlogPost, Order } from './types';
 import { MOCK_PRODUCTS, DEFAULT_SLIDES, DEFAULT_SETTINGS, DEFAULT_BLOG_POSTS } from './constants';
 import { fetchApi } from './api';
+import { removeById } from './utils/collections';
+import { isProductFavorite } from './utils/favorites';
+
+const NAV_LINKS: { to: string; label: string; className?: string }[] = [
+  { to: '/shop', label: 'Koleksiyon' },
+  { to: '/about', label: 'Hakkımızda' },
+  { to: '/contact', label: 'İletişim' },
+  { to: '/koleksiyoner', label: 'Koleksiyoner', className: 'italic' },
+  { to: '/blog', label: 'Blog' }
+];
+
+const TRUST_ITEMS = [
+  { icon: 'lock', title: '256-Bit SSL', subtitle: 'Güvenli Veri İletişimi' },
+  { icon: 'verified_user', title: '3D Secure', subtitle: 'Onaylı Ödeme Sistemi' },
+  { icon: 'encrypted', title: 'KVKK Uyumlu', subtitle: 'Veri Gizliliği Garantisi' }
+];
 
 const Navbar = ({ cartCount, favCount }: { cartCount: number, favCount: number }) => {
   const [isDark, setIsDark] = useState(false);
@@ -60,11 +76,15 @@ const Navbar = ({ cartCount, favCount }: { cartCount: number, favCount: number }
             </Link>
 
             <nav className="hidden md:flex items-center gap-10">
-              <Link to="/shop" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Koleksiyon</Link>
-              <Link to="/about" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Hakkımızda</Link>
-              <Link to="/contact" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">İletişim</Link>
-              <Link to="/koleksiyoner" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors italic">Koleksiyoner</Link>
-              <Link to="/blog" className="text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors">Blog</Link>
+              {NAV_LINKS.map(link => (
+                <Link
+                  key={link.to}
+                  to={link.to}
+                  className={`text-[11px] font-black uppercase tracking-[0.2em] hover:text-primary transition-colors${link.className ? ` ${link.className}` : ''}`}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </nav>
           </div>
 
@@ -143,33 +163,17 @@ const TrustBanner = () => (
   <section className="border-t border-b border-zinc-100 dark:border-zinc-800 bg-white dark:bg-stone-950">
     <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
-        <div className="flex items-center justify-center md:justify-start gap-3 group">
-          <div className="size-10 rounded-xl bg-zinc-50 dark:bg-stone-950 flex items-center justify-center text-primary border border-zinc-100 dark:border-zinc-800 group-hover:bg-primary group-hover:text-stone-950 transition-all duration-500">
-            <span className="material-symbols-outlined text-xl">lock</span>
+        {TRUST_ITEMS.map(item => (
+          <div key={item.icon} className="flex items-center justify-center md:justify-start gap-3 group">
+            <div className="size-10 rounded-xl bg-zinc-50 dark:bg-stone-950 flex items-center justify-center text-primary border border-zinc-100 dark:border-zinc-800 group-hover:bg-primary group-hover:text-stone-950 transition-all duration-500">
+              <span className="material-symbols-outlined text-xl">{item.icon}</span>
+            </div>
+            <div>
+              <h4 className="text-[10px] font-black uppercase tracking-widest mb-0.5">{item.title}</h4>
+              <p className="text-[9px] text-stone-500 font-bold uppercase tracking-tight">{item.subtitle}</p>
+            </div>
           </div>
-          <div>
-            <h4 className="text-[10px] font-black uppercase tracking-widest mb-0.5">256-Bit SSL</h4>
-            <p className="text-[9px] text-stone-500 font-bold uppercase tracking-tight">Güvenli Veri İletişimi</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-center md:justify-start gap-3 group">
-          <div className="size-10 rounded-xl bg-zinc-50 dark:bg-stone-950 flex items-center justify-center text-primary border border-zinc-100 dark:border-zinc-800 group-hover:bg-primary group-hover:text-stone-950 transition-all duration-500">
-            <span className="material-symbols-outlined text-xl">verified_user</span>
-          </div>
-          <div>
-            <h4 className="text-[10px] font-black uppercase tracking-widest mb-0.5">3D Secure</h4>
-            <p className="text-[9px] text-stone-500 font-bold uppercase tracking-tight">Onaylı Ödeme Sistemi</p>
-          </div>
-        </div>
-        <div className="flex items-center justify-center md:justify-start gap-3 group">
-          <div className="size-10 rounded-xl bg-zinc-50 dark:bg-stone-950 flex items-center justify-center text-primary border border-zinc-100 dark:border-zinc-800 group-hover:bg-primary group-hover:text-stone-950 transition-all duration-500">
-            <span className="material-symbols-outlined text-xl">encrypted</span>
-          </div>
-          <div>
-            <h4 className="text-[10px] font-black uppercase tracking-widest mb-0.5">KVKK Uyumlu</h4>
-            <p className="text-[9px] text-stone-500 font-bold uppercase tracking-tight">Veri Gizliliği Garantisi</p>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   </section>
@@ -212,24 +216,14 @@ const Footer = () => (
         <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center md:text-left">© 2024 Asil Kehribar.</p>
 
         <div className="flex flex-wrap items-center justify-center md:justify-end gap-6 md:gap-10">
-          <div className="flex items-center gap-2 group">
-            <span className="material-symbols-outlined text-lg text-stone-300 dark:text-stone-700 group-hover:text-primary transition-colors">lock</span>
-            <div className="text-left">
-              <p className="text-[8px] font-black uppercase tracking-widest text-stone-500">256-Bit SSL</p>
+          {TRUST_ITEMS.map(item => (
+            <div key={item.icon} className="flex items-center gap-2 group">
+              <span className="material-symbols-outlined text-lg text-stone-300 dark:text-stone-700 group-hover:text-primary transition-colors">{item.icon}</span>
+              <div className="text-left">
+                <p className="text-[8px] font-black uppercase tracking-widest text-stone-500">{item.title}</p>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 group">
-            <span className="material-symbols-outlined text-lg text-stone-300 dark:text-stone-700 group-hover:text-primary transition-colors">verified_user</span>
-            <div className="text-left">
-              <p className="text-[8px] font-black uppercase tracking-widest text-stone-500">3D Secure</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 group">
-            <span className="material-symbols-outlined text-lg text-stone-300 dark:text-stone-700 group-hover:text-primary transition-colors">encrypted</span>
-            <div className="text-left">
-              <p className="text-[8px] font-black uppercase tracking-widest text-stone-500">KVKK Uyumlu</p>
-            </div>
-          </div>
+          ))}
 
           <div className="w-px h-6 bg-zinc-200 dark:bg-zinc-800 mx-2 hidden md:block"></div>
 
@@ -295,17 +289,11 @@ export default function App() {
   };
 
   const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+    setCart(prev => removeById(prev, id));
   };
 
   const toggleFavorite = (product: Product) => {
-    setFavorites(prev => {
-      const isFav = prev.find(p => p.id === product.id);
-      if (isFav) {
-        return prev.filter(p => p.id !== product.id);
-      }
-      return [...prev, product];
-    });
+    setFavorites(prev => isProductFavorite(prev, product.id) ? removeById(prev, product.id) : [...prev, product]);
   };
 
   const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);

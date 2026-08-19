@@ -2,6 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Product } from '../types';
+import { FavoriteButton } from '../components/FavoriteButton';
+import { formatPrice } from '../utils/format';
+import { isProductFavorite } from '../utils/favorites';
 
 interface ShopProps {
   onAddToCart: (product: Product) => void;
@@ -17,7 +20,7 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
   const searchQuery = searchParams.get('q') || '';
   const [activeType, setActiveType] = useState<string>('Tümü');
   const [sortBy, setSortBy] = useState<string>('default');
-  const isFavorite = (id: string) => favorites.some(p => p.id === id);
+  const isFavorite = (id: string) => isProductFavorite(favorites, id);
 
   const filteredProducts = products
     .filter(p => {
@@ -122,14 +125,11 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                     <Link to={`/product/${product.id}`} className="block size-full">
                       <img src={product.image || undefined} className="size-full object-cover transition-transform duration-700 group-hover:scale-110" alt={product.name} />
                     </Link>
-                    <button
-                      onClick={() => onToggleFavorite(product)}
-                      className={`absolute top-4 right-4 z-10 size-10 rounded-full flex items-center justify-center transition-all ${isFavorite(product.id) ? 'bg-primary text-stone-950 shadow-lg' : 'bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md text-stone-950 dark:text-white hover:bg-primary hover:text-stone-950'}`}
-                    >
-                      <span className={`material-symbols-outlined text-xl ${isFavorite(product.id) ? 'fill-1' : ''}`}>
-                        favorite
-                      </span>
-                    </button>
+                    <FavoriteButton
+                      variant="card"
+                      isFavorite={isFavorite(product.id)}
+                      onToggle={() => onToggleFavorite(product)}
+                    />
                     {product.isSpecial && (
                       <span className="absolute top-4 left-4 bg-primary text-stone-950 text-[10px] font-black uppercase px-2.5 py-1 rounded shadow-lg">Usta İşi</span>
                     )}
@@ -145,9 +145,9 @@ export const Shop: React.FC<ShopProps> = ({ onAddToCart, favorites, onToggleFavo
                     <div className="flex items-center justify-between">
                       <div>
                         {product.originalPrice && (
-                          <span className="block text-xs text-stone-400 line-through">₺{product.originalPrice.toLocaleString('tr-TR')}</span>
+                          <span className="block text-xs text-stone-400 line-through">{formatPrice(product.originalPrice)}</span>
                         )}
-                        <span className="text-lg font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</span>
+                        <span className="text-lg font-black text-primary italic">{formatPrice(product.price)}</span>
                       </div>
                       <button
                         onClick={() => onAddToCart(product)}

@@ -3,9 +3,25 @@ import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
 import { fetchApi } from '../api';
 import { Product, Slide, SiteSettings, BlogPost, Order } from '../types';
+import { formatPrice, formatTrDate } from '../utils/format';
+import { generateId } from '../utils/id';
+import { clearAuthToken, setAuthToken } from '../utils/auth';
+import { resizeImageFile, resizeImageFiles } from '../utils/image';
+import { removeById, upsertById } from '../utils/collections';
+import { deleteWithConfirm } from '../utils/crud';
 type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
 
 const DEFAULT_PASSWORD = "admin";
+
+const createEmptyBlogPost = (): Partial<BlogPost> => ({
+  title: '',
+  excerpt: '',
+  content: '',
+  image: '',
+  date: formatTrDate()
+});
+
+const EMPTY_SLIDE: Partial<Slide> = { title: '', subtitle: '', tag: '', image: '' };
 
 interface AdminProps {
   products: Product[];
@@ -78,15 +94,12 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     }
   };
 
-  const handleDeleteUser = async (id: string) => {
-    if (!window.confirm('Bu kullanıcıyı silmek istediğinizden emin misiniz?')) return;
-    try {
-      await fetchApi(`/api/users/${id}`, { method: 'DELETE' });
-      setUsersList(prev => prev.filter(u => u.id !== id));
-    } catch (err: any) {
-      alert('Kullanıcı silinemedi: ' + err.message);
-    }
-  };
+  const handleDeleteUser = (id: string) => deleteWithConfirm({
+    endpoint: `/api/users/${id}`,
+    confirmMessage: 'Bu kullanıcıyı silmek istediğinizden emin misiniz?',
+    errorMessage: 'Kullanıcı silinemedi',
+    onSuccess: () => setUsersList(prev => removeById(prev, id))
+  });
 
   useEffect(() => {
     const initSession = async () => {
@@ -95,7 +108,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         if (user) {
           if (user.status === 'blocked') {
             alert("Hesabınız yöneticiler tarafından engellenmiştir.");
-            localStorage.removeItem('asil_auth_token');
+            clearAuthToken();
             return;
           }
           setAuthUser(user);
@@ -125,7 +138,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     };
 
     const handleLogout = () => {
-      localStorage.removeItem('asil_auth_token');
+      clearAuthToken();
       setIsAdminAuthenticated(false);
       setAuthUser(null);
       setUserRole(null);
@@ -209,13 +222,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
 
   // Blog Management States
   const [isEditingBlog, setIsEditingBlog] = useState(false);
-  const [editingBlogPost, setEditingBlogPost] = useState<Partial<BlogPost>>({
-    title: '',
-    excerpt: '',
-    content: '',
-    image: '',
-    date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' })
-  });
+  const [editingBlogPost, setEditingBlogPost] = useState<Partial<BlogPost>>(createEmptyBlogPost);
   const [isBlogSaving, setIsBlogSaving] = useState(false);
   const [blogSaved, setBlogSaved] = useState(false);
 
@@ -227,16 +234,12 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
       if (!id) id = Date.now().toString();
       const newPost = { ...editingBlogPost, id } as BlogPost;
       await fetchApi('/api/blog', { method: 'POST', body: JSON.stringify(newPost) });
-      setBlogPosts(prev => {
-        const exists = prev.find(p => p.id === id);
-        if (exists) return prev.map(p => p.id === id ? newPost : p);
-        return [...prev, newPost];
-      });
+      setBlogPosts(prev => upsertById(prev, newPost));
       setBlogSaved(true);
       setTimeout(() => {
         setBlogSaved(false);
         setIsEditingBlog(false);
-        setEditingBlogPost({ title: '', excerpt: '', content: '', image: '', date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) });
+        setEditingBlogPost(createEmptyBlogPost());
       }, 1000);
     } catch (err: any) {
       alert('Blog kaydedilemedi: ' + err.message);
@@ -245,74 +248,35 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     }
   };
 
-  const deleteBlogPost = async (id: string) => {
-    if (!window.confirm('Bu blog yazısını silmek istediğinizden emin misiniz?')) return;
-    try {
-      await fetchApi(`/api/blog/${id}`, { method: 'DELETE' });
-      setBlogPosts(prev => prev.filter(p => p.id !== id));
-    } catch (err: any) {
-      alert('Blog silinemedi: ' + err.message);
-    }
-  };
+  const deleteBlogPost = (id: string) => deleteWithConfirm({
+    endpoint: `/api/blog/${id}`,
+    confirmMessage: 'Bu blog yazısını silmek istediğinizden emin misiniz?',
+    errorMessage: 'Blog silinemedi',
+    onSuccess: () => setBlogPosts(prev => removeById(prev, id))
+  });
 
   const startEditBlog = (post: BlogPost) => {
     setEditingBlogPost(post);
     setIsEditingBlog(true);
   };
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, callback: (result: string | string[]) => void, isMultiple: boolean = false) => {
-    const files = e.target.files;
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, callback: (result: string | string[]) => void, isMultiple: boolean = false) => {
+    const input = e.target;
+    const files = input.files;
     if (!files || files.length === 0) return;
 
-    const processFile = (file: File): Promise<string> => {
-      return new Promise((resolve) => {
-        if (!file.type.startsWith('image/')) {
-          alert(`Geçersiz dosya: ${file.name}. Lütfen sadece resim yükleyin.`);
-          resolve('');
-          return;
-        }
-
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const img = new Image();
-          img.onload = () => {
-            const canvas = document.createElement('canvas');
-            let { width, height } = img;
-            const MAX_WIDTH = 1200;
-            const MAX_HEIGHT = 1600;
-
-            if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-              const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-              width = width * ratio;
-              height = height * ratio;
-            }
-
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              ctx.drawImage(img, 0, 0, width, height);
-              resolve(canvas.toDataURL('image/jpeg', 0.82));
-            } else {
-              resolve(reader.result as string);
-            }
-          };
-          img.src = reader.result as string;
-        };
-        reader.readAsDataURL(file);
-      });
+    const options = {
+      onInvalidFile: (file: File) => alert(`Geçersiz dosya: ${file.name}. Lütfen sadece resim yükleyin.`)
     };
+    input.value = '';
 
     if (isMultiple) {
-      Promise.all(Array.from(files).map(processFile)).then((results) => {
-        const validResults = results.filter(r => r !== '');
-        if (validResults.length > 0) callback(validResults);
-      });
-    } else {
-      processFile(files[0]).then((result) => {
-        if (result) callback(result);
-      });
+      const results = await resizeImageFiles(files, options);
+      if (results.length > 0) callback(results);
+      return;
     }
-    e.target.value = '';
+
+    const result = await resizeImageFile(files[0], options);
+    if (result) callback(result);
   };
 
   const handleAdminLogin = async (e: React.FormEvent) => {
@@ -320,7 +284,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     try {
       const response = await fetchApi('/api/auth/login', { method: 'POST', body: JSON.stringify({ email: emailInput, password: inputPass }) });
       if (response.token) {
-        localStorage.setItem('asil_auth_token', response.token);
+        setAuthToken(response.token);
         setError('');
         window.location.reload();
       }
@@ -357,26 +321,19 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     setIsEditing(true);
   };
 
-  const deleteProduct = async (id: string) => {
-    if (!window.confirm('Bu ürünü silmek istediğinizden emin misiniz?')) return;
-    try {
-      await fetchApi(`/api/products/${id}`, { method: 'DELETE' });
-      setProducts(prev => prev.filter(p => p.id !== id));
-    } catch (err: any) {
-      alert('Ürün silinemedi: ' + err.message);
-    }
-  };
+  const deleteProduct = (id: string) => deleteWithConfirm({
+    endpoint: `/api/products/${id}`,
+    confirmMessage: 'Bu ürünü silmek istediğinizden emin misiniz?',
+    errorMessage: 'Ürün silinemedi',
+    onSuccess: () => setProducts(prev => removeById(prev, id))
+  });
 
   const saveProduct = async () => {
     try {
-      const id = editingProduct.id || Math.random().toString(36).substr(2, 9);
+      const id = editingProduct.id || generateId();
       const newProd = { ...editingProduct, id } as Product;
       await fetchApi('/api/products', { method: 'POST', body: JSON.stringify(newProd) });
-      setProducts(prev => {
-        const exists = prev.find(p => p.id === id);
-        if (exists) return prev.map(p => p.id === id ? newProd : p);
-        return [...prev, newProd];
-      });
+      setProducts(prev => upsertById(prev, newProd));
       setIsEditing(false);
       setEditingProduct({ name: '', price: 0, description: '', longDescription: '', specs: '', size: '', color: '', type: 'Diğer', image: '' });
     } catch (err: any) {
@@ -390,7 +347,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         alert("Başlık ve Görsel zorunludur!");
         return;
       }
-      const id = editingSlide.id || Math.random().toString(36).substr(2, 9);
+      const id = editingSlide.id || generateId();
       const newSlide = {
         ...editingSlide,
         id,
@@ -402,30 +359,22 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
 
       await fetchApi('/api/slides', { method: 'POST', body: JSON.stringify(newSlide) });
 
-      setSlides(prev => {
-        const existing = prev.find(s => s.id === id);
-        if (existing) return prev.map(s => s.id === id ? newSlide : s);
-        return [...prev, newSlide];
-      });
+      setSlides(prev => upsertById(prev, newSlide));
 
       setIsEditingSlide(false);
-      setEditingSlide({ title: '', subtitle: '', tag: '', image: '' });
+      setEditingSlide(EMPTY_SLIDE);
     } catch (e: any) {
       console.error("Slayt kaydedilemedi", e);
       alert("Slayt kaydedilirken hata oluştu: " + e.message);
     }
   };
 
-  const deleteSlide = async (id: string) => {
-    if (!window.confirm('Bu slaytı silmek istediğinizden emin misiniz?')) return;
-    try {
-      await fetchApi(`/api/slides/${id}`, { method: 'DELETE' });
-      setSlides(prev => prev.filter(slide => slide.id !== id));
-    } catch (e: any) {
-      console.error("Slayt silinemedi", e);
-      alert("Slayt silinirken hata oluştu: " + e.message);
-    }
-  };
+  const deleteSlide = (id: string) => deleteWithConfirm({
+    endpoint: `/api/slides/${id}`,
+    confirmMessage: 'Bu slaytı silmek istediğinizden emin misiniz?',
+    errorMessage: 'Slayt silinirken hata oluştu',
+    onSuccess: () => setSlides(prev => removeById(prev, id))
+  });
 
   const updateOrderStatus = async (id: string, status: Order['status']) => {
     try {
@@ -491,7 +440,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {[
-                { label: 'Toplam Gelir', value: `₺${orders.filter(o => o.status !== 'cancelled').reduce((acc, o) => acc + o.total, 0).toLocaleString('tr-TR')}`, icon: 'payments', color: 'bg-indigo-500' },
+                { label: 'Toplam Gelir', value: formatPrice(orders.filter(o => o.status !== 'cancelled').reduce((acc, o) => acc + o.total, 0)), icon: 'payments', color: 'bg-indigo-500' },
                 { label: 'Aktif Sipariş', value: orders.filter(o => o.status !== 'delivered' && o.status !== 'cancelled').length, icon: 'shopping_basket', color: 'bg-emerald-500' },
                 { label: 'Koleksiyoncu', value: new Set(orders.map(o => o.customer.email)).size, icon: 'group', color: 'bg-blue-500' },
                 { label: 'Toplam Eser', value: products.length, icon: 'inventory_2', color: 'bg-amber-500' }
@@ -560,7 +509,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                             </div>
                           </td>
                           <td className="p-6 text-right">
-                            <p className="font-black text-primary italic text-sm">₺{order.total.toLocaleString('tr-TR')}</p>
+                            <p className="font-black text-primary italic text-sm">{formatPrice(order.total)}</p>
                             <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded ${order.status === 'pending' ? 'bg-amber-100/10 text-amber-500' :
                               order.status === 'delivered' ? 'bg-green-100/10 text-green-500' :
                                 'bg-zinc-100 dark:bg-zinc-800 text-stone-400'
@@ -587,7 +536,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       <span className="material-symbols-outlined text-amber-600">add_circle</span>
                       <span className="text-[10px] font-bold">Yeni Ürün</span>
                     </button>
-                    <button onClick={() => { setEditingBlogPost({ title: '', excerpt: '', content: '', image: '', date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) }); setIsEditingBlog(true); setActiveView('blog'); }} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
+                    <button onClick={() => { setEditingBlogPost(createEmptyBlogPost()); setIsEditingBlog(true); setActiveView('blog'); }} className="p-4 bg-zinc-50 dark:bg-zinc-800 rounded-2xl flex flex-col items-center gap-2 hover:bg-primary/10 transition-all border border-transparent hover:border-primary/20">
                       <span className="material-symbols-outlined text-purple-600">post_add</span>
                       <span className="text-[10px] font-bold">Blog Yaz</span>
                     </button>
@@ -854,7 +803,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                           {product.stock || 0} Adet
                         </span>
                       </td>
-                      <td className="p-6 font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</td>
+                      <td className="p-6 font-black text-primary italic">{formatPrice(product.price)}</td>
                       <td className="p-6">
                         <div className="flex gap-2">
                           <button
@@ -980,7 +929,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span className="text-stone-500">Ara Toplam</span>
-                        <span className="font-bold">₺{selectedOrder.subtotal.toLocaleString('tr-TR')}</span>
+                        <span className="font-bold">{formatPrice(selectedOrder.subtotal)}</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-stone-500">Kargo</span>
@@ -988,7 +937,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       </div>
                       <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800 flex justify-between text-lg">
                         <span className="font-black italic">Toplam</span>
-                        <span className="font-black italic text-primary">₺{selectedOrder.total.toLocaleString('tr-TR')}</span>
+                        <span className="font-black italic text-primary">{formatPrice(selectedOrder.total)}</span>
                       </div>
                     </div>
                   </div>
@@ -1007,7 +956,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                           <p className="text-[10px] text-stone-400 uppercase font-black">{item.type} • {item.size}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-black text-primary italic text-sm">₺{item.price.toLocaleString('tr-TR')}</p>
+                          <p className="font-black text-primary italic text-sm">{formatPrice(item.price)}</p>
                           <p className="text-[10px] text-stone-400 font-bold">{item.quantity} Adet</p>
                         </div>
                       </div>
@@ -1040,7 +989,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
                       <td className="p-6 font-bold text-sm">{order.id}</td>
                       <td className="p-6 text-sm font-medium">{order.customer.fullName}</td>
                       <td className="p-6 text-sm opacity-60">{order.date}</td>
-                      <td className="p-6 font-black text-primary italic text-sm">₺{order.total.toLocaleString('tr-TR')}</td>
+                      <td className="p-6 font-black text-primary italic text-sm">{formatPrice(order.total)}</td>
                       <td className="p-6">
                         <select
                           value={order.status}
@@ -1534,7 +1483,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
               </div>
               <button
                 onClick={() => {
-                  setEditingSlide({ title: '', subtitle: '', tag: '', image: '' });
+                  setEditingSlide(EMPTY_SLIDE);
                   setIsEditingSlide(true);
                 }}
                 className="bg-stone-950 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-primary hover:text-stone-950 transition-all shadow-xl"
@@ -1685,7 +1634,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
               </div>
               <button
                 onClick={() => {
-                  setEditingBlogPost({ title: '', excerpt: '', content: '', image: '', date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }) });
+                  setEditingBlogPost(createEmptyBlogPost());
                   setIsEditingBlog(true);
                 }}
                 className="bg-stone-950 text-white px-8 py-4 rounded-xl font-black text-xs uppercase tracking-widest flex items-center gap-3 hover:bg-primary hover:text-stone-950 transition-all shadow-xl"
@@ -1848,7 +1797,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
             <div className="size-8 rounded-full bg-stone-950 text-white flex items-center justify-center font-black text-xs">A</div>
             <div className="flex-1">
               <p className="text-xs font-bold truncate">{userRole === 'admin' ? 'Saray Nazırı' : 'İçerik Editörü'}</p>
-              <button onClick={() => { localStorage.removeItem('asil_auth_token'); window.location.reload(); }} className="text-[9px] font-black text-primary uppercase hover:underline">Güvenli Çıkış</button>
+              <button onClick={() => { clearAuthToken(); window.location.reload(); }} className="text-[9px] font-black text-primary uppercase hover:underline">Güvenli Çıkış</button>
             </div>
           </div>
         </div>

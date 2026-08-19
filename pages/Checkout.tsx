@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { CartItem, Order } from '../types';
 import { fetchApi } from '../api';
+import { formatPrice, formatTrDateTime } from '../utils/format';
 import { useNavigate } from 'react-router-dom';
 
 interface CheckoutProps {
@@ -39,7 +40,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, onRemove, clearCart })
         items: cart,
         subtotal,
         total: subtotal,
-        date: new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        date: formatTrDateTime()
       };
 
       const result = await fetchApi('/api/orders', {
@@ -205,7 +206,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, onRemove, clearCart })
                     <div className="flex-1">
                       <h4 className="text-xs font-bold line-clamp-1">{item.name}</h4>
                       <p className="text-[10px] text-stone-500 mt-1 uppercase font-bold tracking-widest">{item.type}</p>
-                      <p className="text-sm font-black text-primary mt-2 italic">₺{(item.price * item.quantity).toLocaleString('tr-TR')}</p>
+                      <p className="text-sm font-black text-primary mt-2 italic">{formatPrice(item.price * item.quantity)}</p>
                     </div>
                     <button type="button" onClick={() => onRemove(item.id)} className="text-white/20 hover:text-red-500 transition-colors self-start">
                       <span className="material-symbols-outlined text-sm">close</span>
@@ -223,7 +224,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, onRemove, clearCart })
               <div className="pt-8 border-t border-white/10 space-y-4">
                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
                   <span className="opacity-50">Ürün Toplamı</span>
-                  <span>₺{subtotal.toLocaleString('tr-TR')}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-xs font-bold uppercase tracking-widest">
                   <span className="opacity-50">Lojistik / Sigorta</span>
@@ -231,7 +232,7 @@ export const Checkout: React.FC<CheckoutProps> = ({ cart, onRemove, clearCart })
                 </div>
                 <div className="flex justify-between items-end pt-6 border-t border-white/5">
                   <span className="text-sm font-black uppercase tracking-[0.2em]">Ödenecek Tutar</span>
-                  <span className="text-4xl font-black text-primary italic leading-none">₺{subtotal.toLocaleString('tr-TR')}</span>
+                  <span className="text-4xl font-black text-primary italic leading-none">{formatPrice(subtotal)}</span>
                 </div>
               </div>
 

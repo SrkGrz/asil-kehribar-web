@@ -117,6 +117,20 @@ const authMiddleware = (req, res, next) => {
     } catch (err) { res.status(401).json({ error: 'Geçersiz Token' }); }
 };
 
+const requireAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Yetkisiz' });
+    next();
+};
+
+/** Wraps an async route handler so rejections turn into a JSON error response. */
+const handle = (fn, errorStatus = 400) => async (req, res) => {
+    try {
+        await fn(req, res);
+    } catch (err) {
+        res.status(errorStatus).json({ error: err.message });
+    }
+};
+
 // --- EMAIL SERVICE ---
 import nodemailer from 'nodemailer';
 
@@ -149,193 +163,164 @@ const sendEmail = async (to, subject, text, html) => {
     }
 };
 
+const emailLayout = (headingColor, heading, bodyHtml) => `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+        <h2 style="color: ${headingColor};">${heading}</h2>
+        ${bodyHtml}
+    </div>
+`;
+
 // --- AUTH API ---
-app.post('/api/auth/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        let user = await User.findOne({ email });
+app.post('/api/auth/login', handle(async (req, res) => {
+    const { email, password } = req.body;
+    let user = await User.findOne({ email });
 
-        // Handle initial Admin creation automatically for MongoDB
-        const usersCount = await User.countDocuments();
-        if (usersCount === 0) {
-            const hash = await bcrypt.hash(password, 10);
-            user = await User.create({ id: Date.now().toString(), email, password: hash, role: 'admin' });
-            const token = jwt.sign({ id: user.id, email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1d' });
-            return res.json({ token, user: { id: user.id, email, role: user.role } });
-        }
-
-        if (!user || !(await bcrypt.compare(password, user.password))) {
-            return res.status(401).json({ error: 'Hatalı e-posta veya şifre' });
-        }
-        if (user.status === 'blocked') {
-            return res.status(403).json({ error: 'Hesabınız yöneticiler tarafından engellenmiştir.' });
-        }
-
-        const token = jwt.sign({ id: user.id, email: user.email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1d' });
-        res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.post('/api/auth/register', authMiddleware, async (req, res) => {
-    try {
-        if (req.user.role !== 'admin') return res.status(403).json({ error: 'Yetkisiz' });
-        const { email, password, role } = req.body;
+    // Handle initial Admin creation automatically for MongoDB
+    const usersCount = await User.countDocuments();
+    if (usersCount === 0) {
         const hash = await bcrypt.hash(password, 10);
-        const user = await User.create({ id: Date.now().toString(), email, password: hash, role: role || 'editor' });
-        res.json(user);
-    } catch (err) { res.status(400).json({ error: err.message }); }
-});
-
-app.post('/api/auth/updatePassword', authMiddleware, async (req, res) => {
-    try {
-        const { password } = req.body;
-        const hash = await bcrypt.hash(password, 10);
-        await User.findOneAndUpdate({ id: req.user.id }, { password: hash });
-        res.json({ success: true });
-    } catch (err) { res.status(400).json({ error: err.message }); }
-});
-
-app.get('/api/auth/session', authMiddleware, async (req, res) => {
-    try {
-        const user = await User.findOne({ id: req.user.id });
-        if (!user) return res.status(404).json({ error: 'Bulunamadı' });
-        res.json({ user: { id: user.id, email: user.email, role: user.role, status: user.status } });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+        user = await User.create({ id: Date.now().toString(), email, password: hash, role: 'admin' });
+        const token = jwt.sign({ id: user.id, email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1d' });
+        return res.json({ token, user: { id: user.id, email, role: user.role } });
     }
-});
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res.status(401).json({ error: 'Hatalı e-posta veya şifre' });
+    }
+    if (user.status === 'blocked') {
+        return res.status(403).json({ error: 'Hesabınız yöneticiler tarafından engellenmiştir.' });
+    }
+
+    const token = jwt.sign({ id: user.id, email: user.email, role: user.role, status: user.status }, JWT_SECRET, { expiresIn: '1d' });
+    res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
+}, 500));
+
+app.post('/api/auth/register', authMiddleware, requireAdmin, handle(async (req, res) => {
+    const { email, password, role } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+    const user = await User.create({ id: Date.now().toString(), email, password: hash, role: role || 'editor' });
+    res.json(user);
+}));
+
+app.post('/api/auth/updatePassword', authMiddleware, handle(async (req, res) => {
+    const { password } = req.body;
+    const hash = await bcrypt.hash(password, 10);
+    await User.findOneAndUpdate({ id: req.user.id }, { password: hash });
+    res.json({ success: true });
+}));
+
+app.get('/api/auth/session', authMiddleware, handle(async (req, res) => {
+    const user = await User.findOne({ id: req.user.id });
+    if (!user) return res.status(404).json({ error: 'Bulunamadı' });
+    res.json({ user: { id: user.id, email: user.email, role: user.role, status: user.status } });
+}, 500));
 
 app.get('/api/users', authMiddleware, async (req, res) => {
     const users = await User.find({}, '-password');
     res.json(users);
 });
 
-app.post('/api/users/:id/block', authMiddleware, async (req, res) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Yetkisiz' });
+app.post('/api/users/:id/block', authMiddleware, requireAdmin, async (req, res) => {
     const user = await User.findOneAndUpdate({ id: req.params.id }, { status: req.body.status }, { new: true });
     res.json(user);
 });
 
-app.delete('/api/users/:id', authMiddleware, async (req, res) => {
-    if (req.user.role !== 'admin') return res.status(403).json({ error: 'Yetkisiz' });
-    try {
-        await User.findOneAndDelete({ id: req.params.id });
-        res.json({ success: true });
-    } catch (err) { res.status(400).json({ error: err.message }); }
-});
+app.delete('/api/users/:id', authMiddleware, requireAdmin, handle(async (req, res) => {
+    await User.findOneAndDelete({ id: req.params.id });
+    res.json({ success: true });
+}));
 
 // --- DATA API ---
 const createCrudEndpoints = (model, baseRoute) => {
-    app.get(baseRoute, async (req, res) => {
-        try { res.json(await model.find({})); }
-        catch (err) { res.status(500).json({ error: err.message }); }
-    });
+    app.get(baseRoute, handle(async (req, res) => {
+        res.json(await model.find({}));
+    }, 500));
 
-    app.post(baseRoute, async (req, res) => {
-        try {
-            const { id, ...data } = req.body;
-            const doc = await model.findOneAndUpdate({ id }, { ...data, id }, { upsert: true, new: true });
-            res.json(doc);
-        } catch (err) { res.status(400).json({ error: err.message }); }
-    });
+    app.post(baseRoute, handle(async (req, res) => {
+        const { id, ...data } = req.body;
+        const doc = await model.findOneAndUpdate({ id }, { ...data, id }, { upsert: true, new: true });
+        res.json(doc);
+    }));
 
-    app.delete(`${baseRoute}/:id`, authMiddleware, async (req, res) => {
-        try {
-            await model.findOneAndDelete({ id: req.params.id });
-            res.json({ success: true });
-        } catch (err) { res.status(400).json({ error: err.message }); }
-    });
+    app.delete(`${baseRoute}/:id`, authMiddleware, handle(async (req, res) => {
+        await model.findOneAndDelete({ id: req.params.id });
+        res.json({ success: true });
+    }));
 };
 
 createCrudEndpoints(Product, '/api/products');
 createCrudEndpoints(Slide, '/api/slides');
 createCrudEndpoints(Blog, '/api/blog');
 
-app.get('/api/orders', authMiddleware, async (req, res) => {
-    try { res.json(await Order.find({}).sort({ createdAt: -1 })); }
-    catch (err) { res.status(500).json({ error: err.message }); }
-});
+app.get('/api/orders', authMiddleware, handle(async (req, res) => {
+    res.json(await Order.find({}).sort({ createdAt: -1 }));
+}, 500));
 
-app.post('/api/orders', async (req, res) => {
-    try {
-        const orderId = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
-        const order = await Order.create({ ...req.body, status: 'pending', id: orderId });
+app.post('/api/orders', handle(async (req, res) => {
+    const orderId = 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase();
+    const order = await Order.create({ ...req.body, status: 'pending', id: orderId });
 
-        // Decrease stock for each item
-        for (const item of req.body.items) {
+    // Decrease stock for each item
+    for (const item of req.body.items) {
+        await Product.findOneAndUpdate(
+            { id: item.id },
+            { $inc: { stock: -item.quantity } }
+        );
+    }
+
+    // Send confirmation email
+    const orderSummary = req.body.items.map(i => `${i.name} (${i.quantity} adet) - ₺${i.price}`).join('\n');
+    const emailHtml = emailLayout('#b45309', 'Siparişiniz Alındı!', `
+        <p>Sayın ${req.body.customer.fullName},</p>
+        <p><strong>${orderId}</strong> numaralı siparişiniz başarıyla sistemimize ulaşmıştır.</p>
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">Sipariş Özeti</h3>
+            <p style="white-space: pre-line;">${orderSummary}</p>
+            <hr>
+            <p><strong>Toplam: ₺${req.body.total.toLocaleString('tr-TR')}</strong></p>
+        </div>
+        <p>Ürünleriniz en kısa sürede hazırlanıp kargoya verilecektir.</p>
+        <p>Bizi tercih ettiğiniz için teşekkürler.</p>
+    `);
+
+    await sendEmail(
+        req.body.customer.email,
+        'Siparişiniz Alındı - Asil Kehribar',
+        `Siparişiniz için teşekkürler! Sipariş numaranız: ${orderId}`,
+        emailHtml
+    );
+
+    res.json(order);
+}));
+
+app.post('/api/orders/:id/status', authMiddleware, handle(async (req, res) => {
+    const order = await Order.findOneAndUpdate({ id: req.params.id }, { status: req.body.status }, { new: true });
+
+    // Notification for specific statuses
+    if (req.body.status === 'shipped') {
+        const emailHtml = emailLayout('#059669', 'Siparişiniz Kargoya Verildi!', `
+            <p>Sayın ${order.customer.fullName},</p>
+            <p><strong>${order.id}</strong> numaralı siparişiniz kargoya teslim edilmiştir.</p>
+            <p>Keyifli alışverişler dileriz.</p>
+        `);
+        await sendEmail(order.customer.email, 'Siparişiniz Yolda! - Asil Kehribar', 'Siparişiniz kargoya verildi.', emailHtml);
+    } else if (req.body.status === 'cancelled') {
+        // Return stock if cancelled
+        for (const item of order.items) {
             await Product.findOneAndUpdate(
                 { id: item.id },
-                { $inc: { stock: -item.quantity } }
+                { $inc: { stock: item.quantity } }
             );
         }
+        const emailHtml = emailLayout('#dc2626', 'Siparişiniz İptal Edildi', `
+            <p>Sayın ${order.customer.fullName},</p>
+            <p><strong>${order.id}</strong> numaralı siparişiniz iptal edilmiştir.</p>
+        `);
+        await sendEmail(order.customer.email, 'Sipariş İptali - Asil Kehribar', 'Siparişiniz iptal edildi.', emailHtml);
+    }
 
-        // Send confirmation email
-        const orderSummary = req.body.items.map(i => `${i.name} (${i.quantity} adet) - ₺${i.price}`).join('\n');
-        const emailHtml = `
-            <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
-                <h2 style="color: #b45309;">Siparişiniz Alındı!</h2>
-                <p>Sayın ${req.body.customer.fullName},</p>
-                <p><strong>${orderId}</strong> numaralı siparişiniz başarıyla sistemimize ulaşmıştır.</p>
-                <div style="background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                    <h3 style="margin-top: 0;">Sipariş Özeti</h3>
-                    <p style="white-space: pre-line;">${orderSummary}</p>
-                    <hr>
-                    <p><strong>Toplam: ₺${req.body.total.toLocaleString('tr-TR')}</strong></p>
-                </div>
-                <p>Ürünleriniz en kısa sürede hazırlanıp kargoya verilecektir.</p>
-                <p>Bizi tercih ettiğiniz için teşekkürler.</p>
-            </div>
-        `;
-
-        await sendEmail(
-            req.body.customer.email,
-            'Siparişiniz Alındı - Asil Kehribar',
-            `Siparişiniz için teşekkürler! Sipariş numaranız: ${orderId}`,
-            emailHtml
-        );
-
-        res.json(order);
-    } catch (err) { res.status(400).json({ error: err.message }); }
-});
-
-app.post('/api/orders/:id/status', authMiddleware, async (req, res) => {
-    try {
-        const order = await Order.findOneAndUpdate({ id: req.params.id }, { status: req.body.status }, { new: true });
-
-        // Notification for specific statuses
-        if (req.body.status === 'shipped') {
-            const emailHtml = `
-                <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
-                    <h2 style="color: #059669;">Siparişiniz Kargoya Verildi!</h2>
-                    <p>Sayın ${order.customer.fullName},</p>
-                    <p><strong>${order.id}</strong> numaralı siparişiniz kargoya teslim edilmiştir.</p>
-                    <p>Keyifli alışverişler dileriz.</p>
-                </div>
-            `;
-            await sendEmail(order.customer.email, 'Siparişiniz Yolda! - Asil Kehribar', 'Siparişiniz kargoya verildi.', emailHtml);
-        } else if (req.body.status === 'cancelled') {
-            // Return stock if cancelled
-            for (const item of order.items) {
-                await Product.findOneAndUpdate(
-                    { id: item.id },
-                    { $inc: { stock: item.quantity } }
-                );
-            }
-            const emailHtml = `
-                <div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
-                    <h2 style="color: #dc2626;">Siparişiniz İptal Edildi</h2>
-                    <p>Sayın ${order.customer.fullName},</p>
-                    <p><strong>${order.id}</strong> numaralı siparişiniz iptal edilmiştir.</p>
-                </div>
-            `;
-            await sendEmail(order.customer.email, 'Sipariş İptali - Asil Kehribar', 'Siparişiniz iptal edildi.', emailHtml);
-        }
-
-        res.json(order);
-    } catch (err) { res.status(400).json({ error: err.message }); }
-});
+    res.json(order);
+}));
 
 // Settings API is slightly different (singleton)
 app.get('/api/settings', async (req, res) => {
@@ -351,12 +336,10 @@ app.get('/api/settings', async (req, res) => {
     res.json(s);
 });
 
-app.post('/api/settings', authMiddleware, async (req, res) => {
-    try {
-        const s = await Settings.findOneAndUpdate({ id: 'global' }, req.body, { upsert: true, new: true });
-        res.json(s);
-    } catch (err) { res.status(400).json({ error: err.message }); }
-});
+app.post('/api/settings', authMiddleware, handle(async (req, res) => {
+    const s = await Settings.findOneAndUpdate({ id: 'global' }, req.body, { upsert: true, new: true });
+    res.json(s);
+}));
 
 const PORT = process.env.PORT || 5000;
 

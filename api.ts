@@ -1,5 +1,7 @@
+import { getAuthToken } from './utils/auth';
+
 export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
-    const token = localStorage.getItem('asil_auth_token');
+    const token = getAuthToken();
     const headers = new Headers(options.headers || {});
     headers.set('Content-Type', 'application/json');
     if (token) headers.set('Authorization', `Bearer ${token}`);

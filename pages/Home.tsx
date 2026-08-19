@@ -3,6 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Product, Slide } from '../types';
+import { FavoriteButton } from '../components/FavoriteButton';
+import { formatPrice } from '../utils/format';
+import { isProductFavorite } from '../utils/favorites';
 
 interface HomeProps {
   onAddToCart: (product: Product) => void;
@@ -15,7 +18,7 @@ interface HomeProps {
 
 export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavorite, products, slides, isLoading }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const isFavorite = (id: string) => favorites.some(p => p.id === id);
+  const isFavorite = (id: string) => isProductFavorite(favorites, id);
 
   useEffect(() => {
     if (!slides || slides.length <= 1) return;
@@ -147,24 +150,18 @@ export const Home: React.FC<HomeProps> = ({ onAddToCart, favorites, onToggleFavo
             products.slice(0, 3).map(product => (
               <div key={product.id} className="group relative aspect-[4/5] overflow-hidden bg-zinc-50 dark:bg-stone-900 border border-zinc-100 dark:border-zinc-800 shadow-sm transition-all hover:shadow-2xl">
                 <img src={product.image || undefined} className="w-full h-full object-cover grayscale-[0.2] transition-all duration-700 group-hover:scale-110 group-hover:grayscale-0" alt={product.name} />
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onToggleFavorite(product);
-                  }}
-                  className={`absolute top-8 right-8 z-20 size-12 rounded-2xl flex items-center justify-center transition-all ${isFavorite(product.id) ? 'bg-primary text-stone-950' : 'bg-black/20 text-white backdrop-blur-xl hover:bg-white hover:text-stone-950'}`}
-                >
-                  <span className={`material-symbols-outlined text-2xl ${isFavorite(product.id) ? 'fill-1' : ''}`}>
-                    favorite
-                  </span>
-                </button>
+                <FavoriteButton
+                  variant="overlay"
+                  isFavorite={isFavorite(product.id)}
+                  onToggle={() => onToggleFavorite(product)}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent p-10 flex flex-col justify-end">
                   <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-3">Zanaatkar İşçilik</span>
                   <Link to={`/product/${product.id}`}>
                     <h3 className="font-display text-3xl text-white font-bold mb-6 hover:text-primary transition-colors leading-tight italic">{product.name}</h3>
                   </Link>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-black text-white italic">₺{product.price.toLocaleString('tr-TR')}</span>
+                    <span className="text-2xl font-black text-white italic">{formatPrice(product.price)}</span>
                     <button
                       onClick={() => onAddToCart(product)}
                       className="flex items-center gap-3 text-[10px] font-black uppercase tracking-widest text-stone-950 bg-white px-5 py-3 rounded-xl hover:bg-primary transition-colors"
