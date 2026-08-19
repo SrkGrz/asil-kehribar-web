@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { MOCK_ORDERS, MOCK_CUSTOMERS } from '../constants';
-import { fetchApi } from '../api';
+import { ApiError, fetchApi } from '../api';
 import { Product, Slide, SiteSettings, BlogPost, Order } from '../types';
 type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
 
@@ -37,25 +37,30 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
   const [newUserError, setNewUserError] = useState('');
   const [newUserSuccess, setNewUserSuccess] = useState('');
   const [usersList, setUsersList] = useState<any[]>([]);
+  const [usersError, setUsersError] = useState('');
 
   useEffect(() => {
     if (activeView === 'users' && userRole === 'admin') {
+      setUsersError('');
       fetchApi('/api/users').then(data => {
         setUsersList(data);
       }).catch(e => {
-        console.warn('Kullanıcılar alınamadı, lokal liste aktif.', e);
-        if (usersList.length === 0) {
-          setUsersList([{ id: 'demo1', email: 'admin@asilkehribar.com', role: 'admin', status: 'active' }, { id: 'demo2', email: 'editor@asilkehribar.com', role: 'editor', status: 'active' }]);
-        }
+        console.error('Kullanıcılar alınamadı:', e);
+        setUsersError(e.message || 'Kullanıcılar yüklenemedi.');
       });
     }
   }, [activeView, userRole]);
 
   const handleToggleUserBlock = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'blocked' ? 'active' : 'blocked';
-    fetchApi(`/api/users/${id}/block`, { method: 'POST', body: JSON.stringify({ status: newStatus }) }).catch(e => console.warn(e));
-    setUsersList(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
-    alert(newStatus === 'blocked' ? 'Kullanıcı başarıyla engellendi.' : 'Kullanıcının engeli kaldırıldı.');
+    try {
+      await fetchApi(`/api/users/${id}/block`, { method: 'POST', body: JSON.stringify({ status: newStatus }) });
+      setUsersList(prev => prev.map(u => u.id === id ? { ...u, status: newStatus } : u));
+      alert(newStatus === 'blocked' ? 'Kullanıcı başarıyla engellendi.' : 'Kullanıcının engeli kaldırıldı.');
+    } catch (e: any) {
+      console.error('Kullanıcı durumu güncellenemedi:', e);
+      alert('Kullanıcı durumu güncellenemedi: ' + (e.message || 'Beklenmeyen bir hata oluştu.'));
+    }
   };
 
   const handleResetPasswordAdmin = async (email: string) => {
@@ -106,6 +111,12 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
         setAuthUser(null);
         setIsAdminAuthenticated(false);
         setUserRole(null);
+        if (err instanceof ApiError && (err.status === 401 || err.status === 403)) {
+          localStorage.removeItem('asil_auth_token');
+        } else {
+          console.error('Oturum doğrulanamadı:', err);
+          setError('Oturumunuz doğrulanamadı. Lütfen bağlantınızı kontrol edip tekrar deneyin.');
+        }
       }
     };
     initSession();
@@ -264,16 +275,17 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     if (!files || files.length === 0) return;
 
     const processFile = (file: File): Promise<string> => {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) {
-          alert(`Geçersiz dosya: ${file.name}. Lütfen sadece resim yükleyin.`);
-          resolve('');
+          reject(new Error(`Geçersiz dosya: ${file.name}. Lütfen sadece resim yükleyin.`));
           return;
         }
 
         const reader = new FileReader();
-        reader.onloadend = () => {
+        reader.onerror = () => reject(new Error(`${file.name} dosyası okunamadı.`));
+        reader.onload = () => {
           const img = new Image();
+          img.onerror = () => reject(new Error(`${file.name} görseli açılamadı.`));
           img.onload = () => {
             const canvas = document.createElement('canvas');
             let { width, height } = img;
@@ -293,7 +305,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
               ctx.drawImage(img, 0, 0, width, height);
               resolve(canvas.toDataURL('image/jpeg', 0.82));
             } else {
-              resolve(reader.result as string);
+              reject(new Error(`${file.name} görseli işlenemedi.`));
             }
           };
           img.src = reader.result as string;
@@ -303,13 +315,26 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     };
 
     if (isMultiple) {
-      Promise.all(Array.from(files).map(processFile)).then((results) => {
-        const validResults = results.filter(r => r !== '');
-        if (validResults.length > 0) callback(validResults);
+      Promise.allSettled(Array.from(files).map(processFile)).then((results) => {
+        const successfulImages = results
+          .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
+          .map(result => result.value);
+        const failures = results
+          .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+          .map(result => result.reason instanceof Error ? result.reason.message : 'Bilinmeyen görsel yükleme hatası.');
+
+        if (successfulImages.length > 0) callback(successfulImages);
+        if (failures.length > 0) {
+          console.error('Görsel yükleme hatası:', failures);
+          alert(`Bazı görseller yüklenemedi:\n${failures.join('\n')}`);
+        }
       });
     } else {
       processFile(files[0]).then((result) => {
-        if (result) callback(result);
+        callback(result);
+      }).catch((err: Error) => {
+        console.error('Görsel yükleme hatası:', err);
+        alert(err.message);
       });
     }
     e.target.value = '';
@@ -1751,6 +1776,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
 
             <div>
               <h2 className="text-2xl font-bold mb-6">Mevcut Kullanıcılar</h2>
+              {usersError && <p className="mb-4 rounded-xl bg-red-50 p-4 text-sm font-bold text-red-600 dark:bg-red-950/30">{usersError}</p>}
               <div className="bg-white dark:bg-stone-950 rounded-3xl border border-zinc-200 dark:border-zinc-800 overflow-hidden shadow-sm">
                 <ul className="divide-y divide-zinc-200 dark:divide-zinc-800">
                   {usersList.length === 0 ? (

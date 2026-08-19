@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { Component, ErrorInfo, ReactNode, useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { Home } from './pages/Home';
 import { Shop } from './pages/Shop';
@@ -15,7 +15,48 @@ import { ProductDetail } from './pages/ProductDetail';
 import { Koleksiyoner } from './pages/Koleksiyoner';
 import { CartItem, Product, Slide, SiteSettings, BlogPost, Order } from './types';
 import { MOCK_PRODUCTS, DEFAULT_SLIDES, DEFAULT_SETTINGS, DEFAULT_BLOG_POSTS } from './constants';
-import { fetchApi } from './api';
+import { ApiError, fetchApi } from './api';
+
+interface ErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface ErrorBoundaryState {
+  hasError: boolean;
+}
+
+class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { hasError: false };
+
+  static getDerivedStateFromError(): ErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Uygulama görüntüleme hatası:', error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center gap-6 bg-white px-6 text-center text-stone-900">
+          <span className="material-symbols-outlined text-6xl text-primary">error</span>
+          <div>
+            <h1 className="text-3xl font-display font-black italic">Bir şeyler ters gitti</h1>
+            <p className="mt-3 text-stone-500">Sayfa görüntülenirken beklenmeyen bir hata oluştu.</p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-xl bg-primary px-6 py-3 text-xs font-black uppercase tracking-widest text-stone-950"
+          >
+            Sayfayı Yenile
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const Navbar = ({ cartCount, favCount }: { cartCount: number, favCount: number }) => {
   const [isDark, setIsDark] = useState(false);
@@ -255,30 +296,42 @@ export default function App() {
   const [settings, setSettings] = useState<SiteSettings>(DEFAULT_SETTINGS);
   const [blogPosts, setBlogPosts] = useState<BlogPost[]>(DEFAULT_BLOG_POSTS);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [loadError, setLoadError] = useState('');
 
   // 1. AŞAMA: MongoDB Atlas tabanlı API üzerinden Veri Çekme
   useEffect(() => {
     const fetchAllData = async () => {
       setIsLoading(true);
-      try {
-        const [pData, sData, bData, settsData, oData] = await Promise.all([
-          fetchApi('/api/products').catch(() => null),
-          fetchApi('/api/slides').catch(() => null),
-          fetchApi('/api/blog').catch(() => null),
-          fetchApi('/api/settings').catch(() => null),
-          fetchApi('/api/orders').catch(() => null)
-        ]);
+      setLoadError('');
+      const endpoints = [
+        { endpoint: '/api/products', label: 'ürünler' },
+        { endpoint: '/api/slides', label: 'vitrin görselleri' },
+        { endpoint: '/api/blog', label: 'blog yazıları' },
+        { endpoint: '/api/settings', label: 'site ayarları' },
+        { endpoint: '/api/orders', label: 'siparişler' }
+      ];
+      const results = await Promise.all(endpoints.map(async ({ endpoint, label }) => {
+        try {
+          return { endpoint, label, data: await fetchApi(endpoint) };
+        } catch (error) {
+          console.error(`${endpoint} verileri alınamadı:`, error);
+          const isExpectedOrderAuthFailure = endpoint === '/api/orders' &&
+            error instanceof ApiError && (error.status === 401 || error.status === 403);
+          if (!isExpectedOrderAuthFailure) {
+            setLoadError(prev => prev ? `${prev}, ${label}` : label);
+          }
+          return { endpoint, label, data: null };
+        }
+      }));
 
-        if (pData) setProducts(pData);
-        if (sData) setSlides(sData.sort((a: any, b: any) => (a.id > b.id ? 1 : -1)));
-        if (bData) setBlogPosts(bData);
-        if (settsData) setSettings(settsData);
-        if (oData) setOrders(oData);
-      } catch (err: any) {
-        console.warn("API verileri alınamadı, lokal veriler kullanılıyor:", err.message);
-      } finally {
-        setIsLoading(false);
-      }
+      results.forEach(({ endpoint, data }) => {
+        if (endpoint === '/api/products' && data) setProducts(data);
+        if (endpoint === '/api/slides' && data) setSlides(data.sort((a: any, b: any) => (a.id > b.id ? 1 : -1)));
+        if (endpoint === '/api/blog' && data) setBlogPosts(data);
+        if (endpoint === '/api/settings' && data) setSettings(data);
+        if (endpoint === '/api/orders' && data) setOrders(data);
+      });
+      setIsLoading(false);
     };
 
     fetchAllData();
@@ -316,22 +369,30 @@ export default function App() {
       <ScrollToTop />
       <div className="min-h-screen flex flex-col bg-white dark:bg-background-dark text-stone-900 dark:text-zinc-100 transition-colors duration-300">
         <Navbar cartCount={cartCount} favCount={favCount} />
+        {loadError && (
+          <div className="flex items-center justify-between gap-4 bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-950/40 dark:text-red-200">
+            <p>Veriler yüklenirken bir sorun oluştu: {loadError}.</p>
+            <button onClick={() => setLoadError('')} className="shrink-0 font-black" aria-label="Kapat">✕</button>
+          </div>
+        )}
         <main className="flex-grow">
-          <Routes>
-            <Route path="/" element={<Home onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} slides={slides} isLoading={isLoading} />} />
-            <Route path="/shop" element={<Shop onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
-            <Route path="/product" element={<Navigate to="/shop" replace />} />
-            <Route path="/product/:id" element={<ProductDetail onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
-            <Route path="/about" element={<About settings={settings} />} />
-            <Route path="/blog" element={<Blog blogPosts={blogPosts} />} />
-            <Route path="/contact" element={<Contact settings={settings} />} />
-            <Route path="/checkout" element={<Checkout cart={cart} onRemove={removeFromCart} clearCart={() => setCart([])} />} />
-            <Route path="/admin" element={<Admin products={products} setProducts={setProducts} slides={slides} setSlides={setSlides} settings={settings} setSettings={setSettings} blogPosts={blogPosts} setBlogPosts={setBlogPosts} orders={orders} setOrders={setOrders} />} />
-            <Route path="/favorites" element={<Favorites favorites={favorites} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />} />
-            <Route path="/koleksiyoner" element={<Koleksiyoner products={products} onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
-            <Route path="/returns" element={<Returns />} />
-            <Route path="/certificates" element={<Certificates />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Home onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} slides={slides} isLoading={isLoading} />} />
+              <Route path="/shop" element={<Shop onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
+              <Route path="/product" element={<Navigate to="/shop" replace />} />
+              <Route path="/product/:id" element={<ProductDetail onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
+              <Route path="/about" element={<About settings={settings} />} />
+              <Route path="/blog" element={<Blog blogPosts={blogPosts} />} />
+              <Route path="/contact" element={<Contact settings={settings} />} />
+              <Route path="/checkout" element={<Checkout cart={cart} onRemove={removeFromCart} clearCart={() => setCart([])} />} />
+              <Route path="/admin" element={<Admin products={products} setProducts={setProducts} slides={slides} setSlides={setSlides} settings={settings} setSettings={setSettings} blogPosts={blogPosts} setBlogPosts={setBlogPosts} orders={orders} setOrders={setOrders} />} />
+              <Route path="/favorites" element={<Favorites favorites={favorites} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />} />
+              <Route path="/koleksiyoner" element={<Koleksiyoner products={products} onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
+              <Route path="/returns" element={<Returns />} />
+              <Route path="/certificates" element={<Certificates />} />
+            </Routes>
+          </ErrorBoundary>
         </main>
         <Footer />
       </div>

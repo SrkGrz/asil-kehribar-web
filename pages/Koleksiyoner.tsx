@@ -54,51 +54,76 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
-        if (files) {
-            const newImages: string[] = [];
-            let processedCount = 0;
+        if (!files || files.length === 0) return;
 
-            Array.from(files).forEach(file => {
-                if (!file.type.startsWith('image/')) return;
-
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let { width, height } = img;
-                        const MAX_WIDTH = 1000;
-                        const MAX_HEIGHT = 1200;
-
-                        if (width > MAX_WIDTH || height > MAX_HEIGHT) {
-                            const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
-                            width = width * ratio;
-                            height = height * ratio;
-                        }
-
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        if (ctx) {
-                            ctx.drawImage(img, 0, 0, width, height);
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
-                            newImages.push(dataUrl);
-                        }
-
-                        processedCount++;
-                        if (processedCount === Array.from(files).filter(f => f.type.startsWith('image/')).length) {
-                            setFormData(prev => ({
-                                ...prev,
-                                images: [...(prev.images || []), ...newImages],
-                                image: prev.image || newImages[0] // Set first image as main if none exists
-                            }));
-                        }
-                    };
-                    img.src = reader.result as string;
-                };
-                reader.readAsDataURL(file);
-            });
+        const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+        if (imageFiles.length !== files.length) {
+            alert('Yalnızca resim dosyaları yüklenebilir.');
         }
+        if (imageFiles.length === 0) {
+            e.target.value = '';
+            return;
+        }
+
+        const processFile = (file: File): Promise<string> => new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onerror = () => reject(new Error(`${file.name} dosyası okunamadı.`));
+            reader.onload = () => {
+                const img = new Image();
+                img.onerror = () => reject(new Error(`${file.name} görseli açılamadı.`));
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let { width, height } = img;
+                    const MAX_WIDTH = 1000;
+                    const MAX_HEIGHT = 1200;
+
+                    if (width > MAX_WIDTH || height > MAX_HEIGHT) {
+                        const ratio = Math.min(MAX_WIDTH / width, MAX_HEIGHT / height);
+                        width = width * ratio;
+                        height = height * ratio;
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    if (!ctx) {
+                        reject(new Error(`${file.name} görseli işlenemedi.`));
+                        return;
+                    }
+
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.85));
+                };
+                img.src = reader.result as string;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        Promise.allSettled(imageFiles.map(processFile)).then(results => {
+            const newImages = results
+                .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
+                .map(result => result.value);
+            const failures = results
+                .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+                .map(result => result.reason instanceof Error ? result.reason.message : 'Bilinmeyen görsel yükleme hatası.');
+
+            if (newImages.length > 0) {
+                setFormData(prev => ({
+                    ...prev,
+                    images: [...(prev.images || []), ...newImages],
+                    image: prev.image || newImages[0]
+                }));
+            }
+            if (failures.length > 0) {
+                console.error('Görsel yükleme hatası:', failures);
+                alert(`Bazı görseller yüklenemedi:\n${failures.join('\n')}`);
+            }
+        }).catch(error => {
+            console.error('Görsel yükleme hatası:', error);
+            alert(error instanceof Error ? error.message : 'Görseller yüklenemedi.');
+        }).finally(() => {
+            e.target.value = '';
+        });
     };
 
     return (
