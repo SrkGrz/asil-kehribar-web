@@ -315,11 +315,19 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     };
 
     if (isMultiple) {
-      Promise.all(Array.from(files).map(processFile)).then((results) => {
-        if (results.length > 0) callback(results);
-      }).catch((err: Error) => {
-        console.error('Görsel yükleme hatası:', err);
-        alert(err.message);
+      Promise.allSettled(Array.from(files).map(processFile)).then((results) => {
+        const successfulImages = results
+          .filter((result): result is PromiseFulfilledResult<string> => result.status === 'fulfilled')
+          .map(result => result.value);
+        const failures = results
+          .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+          .map(result => result.reason instanceof Error ? result.reason.message : 'Bilinmeyen görsel yükleme hatası.');
+
+        if (successfulImages.length > 0) callback(successfulImages);
+        if (failures.length > 0) {
+          console.error('Görsel yükleme hatası:', failures);
+          alert(`Bazı görseller yüklenemedi:\n${failures.join('\n')}`);
+        }
       });
     } else {
       processFile(files[0]).then((result) => {

@@ -378,19 +378,19 @@ export default function App() {
         <main className="flex-grow">
           <ErrorBoundary>
             <Routes>
-            <Route path="/" element={<Home onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} slides={slides} isLoading={isLoading} />} />
-            <Route path="/shop" element={<Shop onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
-            <Route path="/product" element={<Navigate to="/shop" replace />} />
-            <Route path="/product/:id" element={<ProductDetail onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
-            <Route path="/about" element={<About settings={settings} />} />
-            <Route path="/blog" element={<Blog blogPosts={blogPosts} />} />
-            <Route path="/contact" element={<Contact settings={settings} />} />
-            <Route path="/checkout" element={<Checkout cart={cart} onRemove={removeFromCart} clearCart={() => setCart([])} />} />
-            <Route path="/admin" element={<Admin products={products} setProducts={setProducts} slides={slides} setSlides={setSlides} settings={settings} setSettings={setSettings} blogPosts={blogPosts} setBlogPosts={setBlogPosts} orders={orders} setOrders={setOrders} />} />
-            <Route path="/favorites" element={<Favorites favorites={favorites} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />} />
-            <Route path="/koleksiyoner" element={<Koleksiyoner products={products} onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
-            <Route path="/returns" element={<Returns />} />
-            <Route path="/certificates" element={<Certificates />} />
+              <Route path="/" element={<Home onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} slides={slides} isLoading={isLoading} />} />
+              <Route path="/shop" element={<Shop onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
+              <Route path="/product" element={<Navigate to="/shop" replace />} />
+              <Route path="/product/:id" element={<ProductDetail onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} products={products} isLoading={isLoading} />} />
+              <Route path="/about" element={<About settings={settings} />} />
+              <Route path="/blog" element={<Blog blogPosts={blogPosts} />} />
+              <Route path="/contact" element={<Contact settings={settings} />} />
+              <Route path="/checkout" element={<Checkout cart={cart} onRemove={removeFromCart} clearCart={() => setCart([])} />} />
+              <Route path="/admin" element={<Admin products={products} setProducts={setProducts} slides={slides} setSlides={setSlides} settings={settings} setSettings={setSettings} blogPosts={blogPosts} setBlogPosts={setBlogPosts} orders={orders} setOrders={setOrders} />} />
+              <Route path="/favorites" element={<Favorites favorites={favorites} onAddToCart={addToCart} onToggleFavorite={toggleFavorite} />} />
+              <Route path="/koleksiyoner" element={<Koleksiyoner products={products} onAddToCart={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} />} />
+              <Route path="/returns" element={<Returns />} />
+              <Route path="/certificates" element={<Certificates />} />
             </Routes>
           </ErrorBoundary>
         </main>

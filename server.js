@@ -144,12 +144,18 @@ const asyncHandler = (handler) => (req, res, next) => {
 
 const createHttpError = (status, message) => Object.assign(new Error(message), { status });
 
-const databaseMiddleware = (req, res, next) => {
-    if (!isDatabaseReady || mongoose.connection.readyState !== 1) {
-        return res.status(503).json({ error: 'Veritabanı bağlantısı hazır değil. Lütfen daha sonra tekrar deneyin.' });
+const databaseMiddleware = asyncHandler(async (req, res, next) => {
+    if (isDatabaseReady && mongoose.connection.readyState === 1) {
+        return next();
     }
-    next();
-};
+    if (mongoose.connection.readyState === 2) {
+        const connected = await databaseConnection;
+        if (connected && mongoose.connection.readyState === 1) {
+            return next();
+        }
+    }
+    return res.status(503).json({ error: 'Veritabanı bağlantısı hazır değil. Lütfen daha sonra tekrar deneyin.' });
+});
 
 app.use('/api', databaseMiddleware);
 
@@ -217,14 +223,20 @@ app.post('/api/auth/login', asyncHandler(async (req, res) => {
 
 app.post('/api/auth/register', authMiddleware, asyncHandler(async (req, res) => {
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Yetkisiz' });
-    const { email, password, role } = req.body;
+    const { email, password, role } = req.body || {};
+    if (!email || !password) {
+        throw createHttpError(400, 'E-posta ve şifre alanları zorunludur.');
+    }
     const hash = await bcrypt.hash(password, 10);
     const user = await User.create({ id: Date.now().toString(), email, password: hash, role: role || 'editor' });
     res.json(user);
 }));
 
 app.post('/api/auth/updatePassword', authMiddleware, asyncHandler(async (req, res) => {
-    const { password } = req.body;
+    const { password } = req.body || {};
+    if (!password) {
+        throw createHttpError(400, 'Yeni şifre alanı zorunludur.');
+    }
     const hash = await bcrypt.hash(password, 10);
     await User.findOneAndUpdate({ id: req.user.id }, { password: hash });
     res.json({ success: true });
@@ -426,6 +438,7 @@ process.on('unhandledRejection', (reason) => {
 
 process.on('uncaughtException', (err) => {
     console.error('❌ Yakalanmamış istisna:', err);
+    process.exit(1);
 });
 
 const PORT = process.env.PORT || 5000;

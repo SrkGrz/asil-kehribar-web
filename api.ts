@@ -12,14 +12,14 @@ export class ApiError extends Error {
     }
 }
 
-const parseResponseBody = async (response: Response): Promise<{ payload?: unknown; body: string }> => {
+const parseResponseBody = async (response: Response): Promise<{ payload?: unknown; body: string; parsed: boolean }> => {
     const body = await response.text();
-    if (!body.trim()) return { body };
+    if (!body.trim()) return { body, parsed: false };
 
     try {
-        return { payload: JSON.parse(body), body };
+        return { payload: JSON.parse(body), body, parsed: true };
     } catch {
-        return { body };
+        return { body, parsed: false };
     }
 };
 
@@ -50,5 +50,5 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}): Pro
     }
 
     if (response.status === 204 || !parsed.body.trim()) return undefined;
-    return parsed.payload ?? parsed.body;
+    return parsed.parsed ? parsed.payload : parsed.body;
 };
