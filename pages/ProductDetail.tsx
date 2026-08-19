@@ -2,6 +2,9 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Product } from '../types';
+import { FavoriteButton } from '../components/FavoriteButton';
+import { formatPrice } from '../utils/format';
+import { isProductFavorite } from '../utils/favorites';
 
 interface ProductDetailProps {
   onAddToCart: (product: Product) => void;
@@ -15,7 +18,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
   const { id } = useParams();
   const navigate = useNavigate();
   const product = products.find(p => p.id === id);
-  const isFavorite = product ? favorites.some(p => p.id === product.id) : false;
+  const isFavorite = product ? isProductFavorite(favorites, product.id) : false;
 
   if (isLoading) {
     return (
@@ -80,14 +83,11 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
         <div className="lg:col-span-5 space-y-4">
           <div className="aspect-[4/5] overflow-hidden bg-zinc-100 dark:bg-stone-950 border border-zinc-200 dark:border-zinc-800 shadow-2xl relative group">
             <img src={activeImage || undefined} className="size-full object-cover transition-transform duration-700 group-hover:scale-110" alt={product.name} />
-            <button
-              onClick={() => onToggleFavorite(product)}
-              className={`absolute top-6 right-6 size-14 rounded-full flex items-center justify-center shadow-2xl transition-all ${isFavorite ? 'bg-primary text-stone-950' : 'bg-white/80 dark:bg-zinc-800/80 backdrop-blur-md text-stone-950 dark:text-white hover:bg-primary hover:text-stone-950'}`}
-            >
-              <span className={`material-symbols-outlined text-2xl ${isFavorite ? 'fill-1' : ''}`}>
-                favorite
-              </span>
-            </button>
+            <FavoriteButton
+              variant="detail"
+              isFavorite={isFavorite}
+              onToggle={() => onToggleFavorite(product)}
+            />
           </div>
 
           {/* Thumbnails */}
@@ -112,9 +112,9 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ onAddToCart, favor
             <span className="inline-block text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-3">{product.type}</span>
             <h1 className="text-4xl md:text-5xl font-display font-black italic mb-4 text-stone-950 dark:text-white">{product.name}</h1>
             <div className="flex items-center gap-4">
-              <span className="text-4xl font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</span>
+              <span className="text-4xl font-black text-primary italic">{formatPrice(product.price)}</span>
               {product.originalPrice && (
-                <span className="text-xl text-stone-400 line-through">₺{product.originalPrice.toLocaleString('tr-TR')}</span>
+                <span className="text-xl text-stone-400 line-through">{formatPrice(product.originalPrice)}</span>
               )}
             </div>
           </div>

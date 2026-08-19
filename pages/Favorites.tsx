@@ -2,6 +2,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '../types';
+import { formatPrice } from '../utils/format';
 
 interface FavoritesProps {
   favorites: Product[];
@@ -52,7 +53,7 @@ export const Favorites: React.FC<FavoritesProps> = ({ favorites, onAddToCart, on
                   <h3 className="font-bold text-base mb-1 group-hover:text-primary transition-colors line-clamp-1 text-stone-950 dark:text-white">{product.name}</h3>
                 </Link>
                 <div className="flex items-center justify-between mt-4">
-                  <span className="text-xl font-black text-primary italic">₺{product.price.toLocaleString('tr-TR')}</span>
+                  <span className="text-xl font-black text-primary italic">{formatPrice(product.price)}</span>
                   <button 
                     onClick={() => onAddToCart(product)}
                     className="size-10 rounded-full bg-stone-950 dark:bg-zinc-100 text-white dark:text-stone-950 flex items-center justify-center hover:scale-110 transition-transform shadow-md"
