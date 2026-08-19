@@ -15,6 +15,16 @@ View your app in AI Studio: https://ai.studio/apps/e034d026-c0af-429c-ac4f-d230e
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Create a `.env` file with the required server variables:
+
+   | Variable | Required | Description |
+   | --- | --- | --- |
+   | `MONGODB_URI` | yes | MongoDB Atlas connection string |
+   | `JWT_SECRET` | yes | Long random string used to sign admin tokens (the server refuses to start without it) |
+   | `ALLOWED_ORIGINS` | no | Comma separated list of origins allowed to call the API (defaults to localhost dev servers) |
+   | `ALLOW_ADMIN_BOOTSTRAP` | no | Set to `true` only while creating the very first admin account, then remove it |
+   | `BOOTSTRAP_ADMIN_EMAIL` | no | Restricts the bootstrap login to a single e-mail address |
+   | `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM` | no | Order notification e-mails (disabled when unset) |
+
 3. Run the app:
-   `npm run dev`
+   `npm run dev:full`

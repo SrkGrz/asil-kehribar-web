@@ -35,9 +35,7 @@ export const Koleksiyoner: React.FC<KoleksiyonerProps> = ({ products, onAddToCar
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            const id = Math.random().toString(36).substr(2, 9);
-            const newProduct = { ...formData, id } as Product;
-            await fetchApi('/api/products', { method: 'POST', body: JSON.stringify(newProduct) });
+            await fetchApi('/api/products/submit', { method: 'POST', body: JSON.stringify(formData) });
             setSuccessMessage('Ürününüz başarıyla incelenmek üzere gönderildi!');
             setFormData({ name: '', price: 0, type: 'Koleksiyoner Ürünü', description: '', image: '', specs: '', size: '', color: '#000000', longDescription: '' });
             setTimeout(() => {

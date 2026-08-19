@@ -5,8 +5,6 @@ import { fetchApi } from '../api';
 import { Product, Slide, SiteSettings, BlogPost, Order } from '../types';
 type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'settings' | 'integrations' | 'slides' | 'blog' | 'users' | 'about';
 
-const DEFAULT_PASSWORD = "admin";
-
 interface AdminProps {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
@@ -344,7 +342,7 @@ export const Admin: React.FC<AdminProps> = ({ products, setProducts, slides, set
     }
 
     try {
-      await fetchApi('/api/auth/updatePassword', { method: 'POST', body: JSON.stringify({ password: passChange.new }) });
+      await fetchApi('/api/auth/updatePassword', { method: 'POST', body: JSON.stringify({ currentPassword: passChange.current, password: passChange.new }) });
       setPassSuccess('Şifreniz başarıyla güncellendi.');
       setPassChange({ current: '', new: '', confirm: '' });
     } catch (err: any) {
